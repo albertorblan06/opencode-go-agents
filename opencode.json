@@ -3,14 +3,18 @@
   "default_agent": "auto",
   "agent": {
     "auto": {
-      "description": "Orchestrates tasks using OpenCode Go models - delegates to specialized subagents based on task type. Fallback: switch to auto-fallback if tasks fail.",
+      "description": "Prompt-engineering orchestrator on Kimi K2.5 - engineers every request into structured instructions and routes to specialized agents. Best economy-performance ratio.",
       "mode": "primary",
-      "model": "opencode-go/glm-5",
+      "model": "opencode-go/kimi-k2.5",
       "color": "#00C896",
-      "prompt": "{file:./agents/auto.md}"
+      "prompt": "{file:./agents/auto.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
     },
     "auto-fallback": {
-      "description": "Fallback orchestrator using Claude Opus 4.6 via GitHub Copilot when Go models fail",
+      "description": "Direct handler using Claude Opus 4.6 via GitHub Copilot - handles work directly when Kimi/GLM-5 agents fail",
       "mode": "primary",
       "model": "github-copilot/claude-opus-4.6",
       "color": "#FF6B6B",
