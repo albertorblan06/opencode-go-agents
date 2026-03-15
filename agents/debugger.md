@@ -62,3 +62,12 @@ If the planner's hypothesis doesn't match what you find:
 - Check for similar issues elsewhere in the codebase
 - If the bug is complex, escalate to @reasoner for deeper analysis
 - After fixing, report: what was wrong, what you changed, and VALIDATION results
+
+## File Scope Restrictions
+
+NEVER modify these files/patterns unless the user explicitly requests it:
+- `.env`, `.env.*` - Environment variables may contain secrets
+- `credentials.json`, `*.pem`, `*.key` - Credential files
+- `opencode.json`, agent config files (`agents/*.md`) - Agent configuration
+- Files outside the project root directory
+- `package-lock.json`, `yarn.lock`, `go.sum` - Lock files

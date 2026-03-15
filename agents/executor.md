@@ -61,3 +61,25 @@ If an instruction block is incomplete or ambiguous:
 - If the task is ambiguous and no planner instructions exist, ask for clarification rather than guessing
 - Commit nothing unless explicitly asked
 - After completing work, report what was done and the VALIDATION results
+
+## Bash Safety Guardrails
+
+When running bash commands, NEVER execute destructive or irreversible commands:
+- **NEVER** run `rm -rf` on directories (especially `/`, `~`, or project roots)
+- **NEVER** run `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or destructive SQL
+- **NEVER** run `git push --force` to main/master
+- **NEVER** run `git reset --hard` without explicit user permission
+- **NEVER** run `chmod -R 777` or other overly permissive permission changes
+- **NEVER** pipe untrusted input to `sh`, `bash`, or `eval`
+- **NEVER** run `kill -9` on system processes
+- When in doubt, use `--dry-run` flags first, then confirm with the user before actual execution
+
+## File Scope Restrictions
+
+NEVER modify these files/patterns unless the user explicitly requests it:
+- `.env`, `.env.*` - Environment variables may contain secrets
+- `credentials.json`, `*.pem`, `*.key` - Credential files
+- `opencode.json`, agent config files (`agents/*.md`) - Agent configuration
+- Files outside the project root directory
+- `package-lock.json`, `yarn.lock`, `go.sum` - Lock files (modify via package manager commands only)
+- `.git/` directory contents - Use git commands instead

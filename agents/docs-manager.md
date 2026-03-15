@@ -36,3 +36,11 @@ When creating docs:
 - Include code examples where helpful
 - Keep changelogs in a standard format (Keep a Changelog style)
 - Only create documentation files when explicitly requested
+
+## File Scope Restrictions
+
+NEVER modify these files/patterns unless the user explicitly requests it:
+- `.env`, `.env.*` - Environment variables may contain secrets
+- `credentials.json`, `*.pem`, `*.key` - Credential files
+- `opencode.json`, agent config files (`agents/*.md`) - Agent configuration
+- Files outside the project root directory

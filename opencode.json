@@ -42,17 +42,22 @@
       "mode": "subagent",
       "model": "opencode-go/glm-5",
       "color": "#F39C12",
-      "prompt": "{file:./agents/auditor.md}"
+      "prompt": "{file:./agents/auditor.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
     },
     "planner": {
-      "description": "Creates implementation plans, breaks down tasks, and defines execution order. Outputs structured instruction blocks for GLM-5 agents.",
+      "description": "Creates implementation plans, breaks down tasks, and defines execution order. Outputs structured instruction blocks for target agents.",
       "mode": "subagent",
       "model": "opencode-go/kimi-k2.5",
       "color": "#9B59B6",
       "prompt": "{file:./agents/planner.md}",
       "tools": {
         "write": false,
-        "edit": false
+        "edit": false,
+        "bash": false
       }
     },
     "mapper": {
@@ -63,7 +68,8 @@
       "prompt": "{file:./agents/mapper.md}",
       "tools": {
         "write": false,
-        "edit": false
+        "edit": false,
+        "bash": false
       }
     },
     "reasoner": {
@@ -74,15 +80,20 @@
       "prompt": "{file:./agents/reasoner.md}",
       "tools": {
         "write": false,
-        "edit": false
+        "edit": false,
+        "bash": false
       }
     },
     "verifier": {
       "description": "Verifies implementations against requirements, runs tests, and validates correctness",
       "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
+      "model": "opencode-go/kimi-k2.5",
       "color": "#2ECC71",
-      "prompt": "{file:./agents/verifier.md}"
+      "prompt": "{file:./agents/verifier.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
     },
     "docs-manager": {
       "description": "Creates and maintains documentation, READMEs, changelogs, and inline docs",
