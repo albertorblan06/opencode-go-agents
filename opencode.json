@@ -1,0 +1,102 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "auto",
+  "agent": {
+    "auto": {
+      "description": "Orchestrates tasks using OpenCode Go models - delegates to specialized subagents based on task type. Fallback: switch to auto-fallback if tasks fail.",
+      "mode": "primary",
+      "model": "opencode-go/glm-5",
+      "color": "#00C896",
+      "prompt": "{file:./agents/auto.md}"
+    },
+    "auto-fallback": {
+      "description": "Fallback orchestrator using Claude Opus 4.6 via GitHub Copilot when Go models fail",
+      "mode": "primary",
+      "model": "github-copilot/claude-opus-4.6",
+      "color": "#FF6B6B",
+      "prompt": "{file:./agents/auto-fallback.md}"
+    },
+    "architect": {
+      "description": "Designs system architecture, component structure, and technical decisions",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#4A90D9",
+      "prompt": "{file:./agents/architect.md}"
+    },
+    "executor": {
+      "description": "Implements code changes, writes new features, and executes build tasks",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#50C878",
+      "prompt": "{file:./agents/executor.md}"
+    },
+    "debugger": {
+      "description": "Investigates bugs, analyzes errors, and fixes issues in the codebase",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#E74C3C",
+      "prompt": "{file:./agents/debugger.md}"
+    },
+    "auditor": {
+      "description": "Reviews code quality, security, performance, and best practices",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#F39C12",
+      "prompt": "{file:./agents/auditor.md}"
+    },
+    "planner": {
+      "description": "Creates implementation plans, breaks down tasks, and defines execution order. Outputs structured instruction blocks for GLM-5 agents.",
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.5",
+      "color": "#9B59B6",
+      "prompt": "{file:./agents/planner.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "mapper": {
+      "description": "Explores and maps codebase structure, dependencies, and architecture",
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.5",
+      "color": "#1ABC9C",
+      "prompt": "{file:./agents/mapper.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "reasoner": {
+      "description": "Performs deep analysis, logical reasoning, and complex problem solving",
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.5",
+      "color": "#3498DB",
+      "prompt": "{file:./agents/reasoner.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "verifier": {
+      "description": "Verifies implementations against requirements, runs tests, and validates correctness",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#2ECC71",
+      "prompt": "{file:./agents/verifier.md}"
+    },
+    "docs-manager": {
+      "description": "Creates and maintains documentation, READMEs, changelogs, and inline docs",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#E67E22",
+      "prompt": "{file:./agents/docs-manager.md}"
+    },
+    "git-manager": {
+      "description": "Manages git operations, commits, branches, PRs, and GitHub workflows",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#95A5A6",
+      "prompt": "{file:./agents/git-manager.md}"
+    }
+  }
+}
