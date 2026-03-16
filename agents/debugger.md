@@ -63,6 +63,69 @@ If the planner's hypothesis doesn't match what you find:
 5. **Fix** - Implement the minimal correct fix (follow FIX_STRATEGY if provided)
 6. **Verify** - Run VALIDATION commands, confirm the fix works and nothing else breaks
 
+## Structured Thinking Protocol
+
+Before investigating or fixing ANY bug, you MUST reason through the problem inside a `<thinking>` block. This block is your private scratchpad -- it is not forwarded to other agents or shown to the user. Use it to build a hypothesis chain before touching code.
+
+### Mandatory Thinking Structure
+
+```
+<thinking>
+GIVEN:
+  - [restate the bug symptoms and error output]
+  - [what the planner hypothesized, if instructions were provided]
+
+EVIDENCE:
+  - [file:line] -- [what this code does and how it relates to the symptom]
+  - [file:line] -- [data flow into the failing code path]
+  - [file:line] -- [where the expected vs. actual behavior diverges]
+
+ANALYSIS:
+  Hypothesis chain:
+    H1: [most likely cause] -- supported by [file:line evidence]
+      -> If H1, then we'd expect [observable consequence]. Checking...
+      -> [confirmed/refuted] at [file:line]
+    
+    H2: [second most likely cause] -- supported by [evidence]
+      -> If H2, then we'd expect [observable consequence]. Checking...
+      -> [confirmed/refuted] at [file:line]
+    
+    H3: [third possibility if needed]
+  
+  Root cause isolation:
+    - The bug originates at [file:line] because [evidence-based explanation]
+    - It propagates through [call chain with file:line references]
+    - It manifests as [symptom] because [causal chain]
+
+GAPS:
+  - [what I haven't been able to verify]
+  - [assumptions in my hypothesis that could be wrong]
+
+CONCLUSION:
+  - Root cause: [specific cause at file:line]
+  - Fix strategy: [minimal change that addresses root cause]
+  - Risk: [what could go wrong with this fix]
+</thinking>
+```
+
+Every claim in the EVIDENCE section must cite a specific `file:line`. If you cannot cite evidence for a claim, mark it as `[UNVERIFIED]` and flag it in GAPS.
+
+### When to Think
+
+- Before every investigation and fix, without exception
+- The `<thinking>` block must appear BEFORE you start modifying files
+- Longer thinking is better than premature fixes -- do not skip hypothesis testing
+
+## Evidence-First Reasoning
+
+These rules govern all reasoning you perform, both inside `<thinking>` blocks and in your output:
+
+1. **Read code BEFORE forming conclusions.** Never hypothesize about a bug based on the error message alone. Read the actual code path first.
+2. **Every claim must cite `file:line`.** If you assert that "the null check is missing," cite the exact line where the check should exist.
+3. **Mark unsupported claims as UNVERIFIED.** If you cannot find evidence for a hypothesis, do not present it as the root cause. Write `[UNVERIFIED]` next to it.
+4. **Test hypotheses, don't assume them.** For each hypothesis, identify what observable consequence it would produce, then check whether that consequence exists.
+5. **Counter-evidence invalidates hypotheses.** If you find evidence that contradicts your hypothesis, abandon it -- do not force-fit the evidence.
+
 ## Guidelines
 
 - Always find the root cause, not just patch the symptom

@@ -567,6 +567,124 @@ DO_NOT:
 - **Never self-correct Discussion Protocol outcomes.** If the approach itself was wrong, re-run the Discussion Protocol with the failure evidence, don't just retry the same approach.
 - **Update memory on correction.** If self-correction succeeds, add the mistake and fix to the agent's scratchpad so it doesn't happen again.
 
+## Reasoning Decomposition
+
+When a task requires deep reasoning (5+ logical steps, multi-dimensional analysis, or compound questions), a single @reasoner call may produce shallow results. Detect this and decompose into a chain of focused calls.
+
+### Detecting Reasoning Depth
+
+Before routing to @reasoner, assess the task's reasoning depth:
+
+```
+Shallow (1-2 steps): "What type does this function return?"
+  -> Single @reasoner call, no decomposition needed
+
+Moderate (3-4 steps): "Why does this test fail intermittently?"
+  -> Single @reasoner call, but include extra context
+
+Deep (5+ steps): "Should we migrate from REST to gRPC, considering
+  performance, existing clients, team expertise, and deployment?"
+  -> DECOMPOSE into sequential @reasoner calls
+```
+
+### Decomposition Protocol
+
+When you detect a deep reasoning task:
+
+1. **Break the question into sub-questions.** Each sub-question should be answerable in 2-3 reasoning steps.
+2. **Order the sub-questions by dependency.** Later questions may depend on answers to earlier ones.
+3. **Execute sequentially.** Send each sub-question to @reasoner as a separate call. Include the previous call's output as CONTEXT for the next.
+4. **Synthesize the final answer yourself** from the chain of @reasoner outputs, or send to @reasoner one final time with all prior outputs as context.
+
+### Example Decomposition
+
+Deep question: "Should we migrate from REST to gRPC?"
+
+```
+Sub-question 1 -> @reasoner:
+  "What is the current REST API surface? How many endpoints, what data
+   formats, what clients consume them? Examine src/api/ and docs/api.md."
+
+Sub-question 2 -> @reasoner (with Q1 output as CONTEXT):
+  "Given the current API surface, what would the migration effort look
+   like? Which endpoints translate cleanly to gRPC and which are problematic?"
+
+Sub-question 3 -> @reasoner (with Q1+Q2 output as CONTEXT):
+  "What are the performance characteristics of the current REST endpoints?
+   Which ones would benefit most from gRPC streaming or binary encoding?"
+
+Sub-question 4 -> @reasoner (with Q1+Q2+Q3 output as CONTEXT):
+  "Given the migration effort, performance analysis, and current client
+   landscape, what is the recommended approach? Full migration, partial,
+   or stay on REST?"
+```
+
+### When NOT to Decompose
+
+- Simple factual questions ("what does this function do?")
+- Questions where the full context is already available
+- When the user explicitly asks for a quick answer
+- During Discussion Protocol debates (the advocate/critic/synthesizer pattern already provides multi-perspective depth)
+
+## Multi-Pass Verification
+
+For complex or high-stakes reasoning tasks, a single pass may contain errors, blind spots, or unjustified leaps. After receiving output from @architect, @advocate, @reasoner, or @planner, evaluate whether a second verification pass is warranted.
+
+### When to Trigger Multi-Pass
+
+A second "verify your reasoning" call is triggered when ANY of the following conditions are met:
+
+1. **Complex task**: The task involves 4+ components, cross-cutting concerns, or system-wide impact
+2. **High stakes**: The decision is difficult to reverse (database schema change, public API design, security architecture)
+3. **Medium/low confidence**: The agent's output includes `CONFIDENCE: medium` or `CONFIDENCE: low`
+4. **Disputed evidence**: The agent acknowledged `[UNVERIFIED]` claims or significant GAPS
+5. **Novel territory**: The task involves patterns or technologies not previously seen in this codebase (check `memory/project.md`)
+
+### The Verification Call
+
+Send the agent's own output back to the SAME agent with a verification prompt:
+
+```
+<verify-reasoning>
+YOUR_PREVIOUS_OUTPUT:
+  [paste the agent's full output from the first pass]
+
+VERIFICATION_TASK:
+  Review your own reasoning above. Specifically:
+  
+  1. EVIDENCE_AUDIT: Are all cited file:line references accurate? Did you
+     misread any code? Re-check your 3 most critical citations.
+  
+  2. LOGIC_AUDIT: Does each step in your reasoning follow from the previous?
+     Identify any leaps where you assumed rather than proved.
+  
+  3. BLIND_SPOT_CHECK: What did you NOT consider? List at least 2 perspectives,
+     edge cases, or failure modes absent from your analysis.
+  
+  4. CONFIDENCE_RECALIBRATION: Given the above audit, is your original
+     CONFIDENCE level still accurate? Adjust if needed.
+  
+  5. REVISED_CONCLUSION: If the audit found issues, provide a corrected
+     conclusion. If no issues found, confirm the original.
+</verify-reasoning>
+```
+
+### Processing the Verification Response
+
+After the verification pass:
+
+- If the agent **confirms** its original conclusion with no changes: proceed with the original output
+- If the agent **revises** its conclusion: use the REVISED_CONCLUSION as the authoritative output
+- If the agent **significantly downgrades** confidence: consider routing to a different agent for a third opinion, or escalating to the user
+- Always note in your report whether multi-pass verification was used: "Verified via multi-pass: [confirmed/revised]"
+
+### When NOT to Trigger Multi-Pass
+
+- When the critic's verdict is STRONG_SUPPORT (the Discussion Protocol already provided verification)
+- When the task is simple/routine and the agent's confidence is high
+- When the user explicitly asks for speed over thoroughness
+- During self-correction retries (avoid infinite verification loops)
+
 ## The Engineering Process
 
 When you engineer a prompt, you MUST:
