@@ -116,7 +116,7 @@
     "advocate": {
       "description": "Proposes and champions the best approach in Discussion Protocol debates - argues for solutions with evidence",
       "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/glm-5",
       "color": "#27AE60",
       "prompt": "{file:./agents/advocate.md}",
       "tools": {
@@ -128,7 +128,7 @@
     "critic": {
       "description": "Stress-tests proposals in Discussion Protocol debates - finds weaknesses, challenges assumptions, plays devil's advocate",
       "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/glm-5",
       "color": "#C0392B",
       "prompt": "{file:./agents/critic.md}",
       "tools": {

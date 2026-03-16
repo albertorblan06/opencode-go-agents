@@ -43,8 +43,8 @@ User message
 | **mapper** | Kimi K2.5 | Codebase exploration, structure mapping | Read-only, no bash |
 | **reasoner** | Kimi K2.5 | Deep analysis, trade-off evaluation | Read-only, no bash |
 | **verifier** | Kimi K2.5 | Requirement verification, test validation | Read-only |
-| **advocate** | Kimi K2.5 | Proposes best approach in debates | Read-only, no bash |
-| **critic** | Kimi K2.5 | Stress-tests proposals, finds weaknesses | Read-only, no bash |
+| **advocate** | GLM-5 | Proposes best approach in debates | Read-only, no bash |
+| **critic** | GLM-5 | Stress-tests proposals, finds weaknesses | Read-only, no bash |
 | **synthesizer** | Kimi K2.5 | Final decision-maker in debates | Read-only, no bash |
 | **docs-manager** | MiniMax M2.5 | Documentation writing and maintenance | Full |
 | **git-manager** | MiniMax M2.5 | Git operations, commits, branches, PRs | Full |
@@ -78,44 +78,39 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
 
 ### Discussion Protocol (Subagent Debates)
 
-When a task has multiple viable approaches, the Auto orchestrator triggers a structured debate between three methodology agents. This ensures better decisions through adversarial reasoning.
+**Every task that results in code changes goes through the Discussion Protocol first.** Two GLM-5 agents debate the approach from opposing perspectives, then a Kimi K2.5 agent synthesizes the final decision. This catches bad approaches before they waste implementation tokens.
 
 ```
- Auto identifies ambiguous decision
+ Any task requiring code changes
     |
     v
- @advocate (Kimi K2.5)
+ @advocate (GLM-5)
     |  Examines code, evaluates options, champions best approach
     |  Produces: <proposal> with arguments, trade-offs, implementation sketch
     |
     v
- @critic (Kimi K2.5)
+ @critic (GLM-5)
     |  Independently verifies claims, stress-tests the proposal
     |  Finds weaknesses, checks dismissed alternatives
     |  Produces: <critique> with verdict (STRONG_SUPPORT / CONDITIONAL_SUPPORT / MAJOR_CONCERNS / OPPOSE)
     |
     v
  @synthesizer (Kimi K2.5)
-    |  Weighs both sides, resolves disputed claims
+    |  Weighs both sides cheaply, resolves disputed claims
     |  Produces: <decision> with final approach, implementation steps, guardrails
     |
     v
  Auto merges <decision> into instruction blocks -> routes to @architect / @executor
 ```
 
-**When it triggers:**
-- User asks "should we use X or Y?" or "what's the best approach?"
-- Multiple viable approaches exist and the best path is unclear
-- A design decision has significant long-term consequences
-- Trade-offs between competing priorities (performance vs. readability, etc.)
+**What skips Discussion (read-only operations):**
+- Simple questions about code
+- Codebase exploration (@mapper)
+- Code review (@auditor)
+- Git operations (@git-manager)
+- Documentation (@docs-manager)
 
-**When it doesn't trigger:**
-- Clear single approach (just do it)
-- User already decided the approach
-- Time-sensitive bug fixes
-- Simple implementation tasks
-
-The whole debate runs on Kimi K2.5 (cheap thinking tokens), so the cost of better decisions is minimal compared to the cost of implementing the wrong approach on GLM-5.
+**Cost:** 2 GLM-5 calls + 1 cheap Kimi call per discussion. The cost of debating is small compared to the cost of implementing the wrong approach and redoing it.
 
 ### Fallback
 

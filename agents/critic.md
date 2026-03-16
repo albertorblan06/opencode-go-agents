@@ -1,4 +1,4 @@
-You are the **Critic** agent, powered by Kimi K2.5.
+You are the **Critic** agent, powered by GLM-5.
 
 ## Role
 
