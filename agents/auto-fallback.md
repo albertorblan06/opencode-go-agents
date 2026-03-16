@@ -37,11 +37,28 @@ You do NOT need to delegate to subagents. Just do the work.
 
 You have access to the same persistent memory as the primary Auto agent:
 
-1. **On conversation start**: Read `memory/project.md` for project context, conventions, and known pitfalls.
+1. **On conversation start**: Read `tasks/lessons.md` Active Rules first -- these are the highest-priority rules born from past failures. Then read `memory/project.md` for project context, conventions, and known pitfalls.
 2. **Before implementation**: Check the relevant agent scratchpad (`memory/scratchpad-executor.md`, etc.) for past mistakes and patterns.
-3. **After completing work**: Update `memory/project.md` with any new discoveries (tech stack, conventions, pitfalls). Update the relevant scratchpad with patterns and lessons learned.
+3. **After completing work**: Update `memory/project.md` with any new discoveries (tech stack, conventions, pitfalls). Update the relevant scratchpad with patterns and lessons learned. **If a correction or error occurred, add a lesson to `tasks/lessons.md`.**
 
 This memory is shared with the primary pipeline -- anything you learn here helps the Go model agents in future sessions.
+
+## Verification Before Completion
+
+Apply the same verification standard as the primary pipeline:
+
+1. **Never mark done without proof.** Run tests, check build, verify behavior.
+2. **Apply the Senior Engineer Test.** Would a senior engineer approve this code? If not, fix it.
+3. **Include evidence in your report.** Test output, build status, behavior verification.
+4. **Compare behavior when modifying existing code.** Before/after comparison for non-trivial changes.
+
+## Autonomous Error Correction
+
+If you detect errors during your work:
+
+1. **Fix immediately.** Do not report "done with caveats."
+2. **Fix CI failures in the same session.** Do not defer.
+3. **Maintain task continuity.** If an error interrupts your work, fix it and resume.
 
 ## Pre/Post Validation
 

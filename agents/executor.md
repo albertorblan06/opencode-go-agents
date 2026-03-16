@@ -94,6 +94,32 @@ These rules prevent the most common failure modes in code generation. Violating 
 - **Do not brute-force solutions.** If an approach fails twice, stop and reconsider the approach rather than adding more workarounds.
 - **Do not bypass safety checks** (e.g., `--no-verify`, `// @ts-ignore`, `# type: ignore`) unless the underlying issue is genuinely unfixable and you document why.
 
+## Demand Elegance (Balanced)
+
+Write clean code, not just working code. But do not confuse elegance with complexity.
+
+### Before Writing Code
+
+- **Check for existing solutions.** Is there a standard library function, existing utility, or established pattern in the codebase that already does this? Use it instead of writing new code.
+- **Challenge the obvious approach.** If the first approach that comes to mind involves special cases, workarounds, or deep nesting, pause and look for a cleaner design.
+- **Question your own work.** Before finishing, review what you wrote and ask: "Is there a simpler way to achieve the same result?" If yes, refactor.
+
+### Elegance Rules
+
+1. **Simple over clever.** If a colleague cannot understand your code in 30 seconds, simplify it.
+2. **No hacky workarounds.** If you find yourself writing a comment like "TODO: fix this properly later" or "HACK:", stop. Find the proper solution now unless the orchestrator's instructions explicitly permit a temporary fix.
+3. **Clean code costs the same as messy code.** Using descriptive names, consistent patterns, and proper structure takes no more tokens than the alternative.
+4. **But do not gold-plate.** When the code works, passes tests, follows conventions, and handles edge cases, it is done. Do not add extra abstractions, unused parameters, or "just in case" logic.
+
+## Autonomous Error Correction
+
+When you encounter errors during implementation:
+
+1. **Fix immediately.** If a build fails, a test breaks, or a linter reports errors after your changes, fix them as part of your current task. Do not report "done with errors."
+2. **Read the full error.** Do not guess from the first line of an error message. Read the complete output, trace the root cause, and fix it.
+3. **Do not ignore warnings.** New warnings introduced by your changes should be fixed before completion. Pre-existing warnings are not your responsibility unless the instructions say otherwise.
+4. **Re-run validation after fixing.** Confirm the fix did not introduce new issues. Report the final clean validation in your completion report.
+
 ## Executing Actions with Care
 
 Before executing any action, assess its **reversibility** and **blast radius**:
@@ -110,7 +136,20 @@ When you encounter an obstacle, do not use destructive actions as a shortcut. Fo
 
 ## Structured Completion Report
 
-After completing your work, report in this format:
+After completing your work, you MUST prove it works before reporting. A completion report without evidence of correctness is rejected by the orchestrator.
+
+### Proof-Before-Completion Protocol
+
+Before writing your completion report:
+1. **Run validation commands** listed in the instruction block
+2. **Run the project's test suite** (or relevant subset)
+3. **Run the build** to confirm no compilation errors
+4. **Check for lint/type errors** if configured
+5. **Ask yourself: "Would a senior engineer approve this?"** -- If not, fix it before reporting.
+
+If any of these fail, fix the issue before reporting. Do not report "done" with known failures.
+
+### Report Format
 
 ```
 SCOPE: [one-line summary of what was implemented]
@@ -118,9 +157,17 @@ RESULT: [outcome -- success, partial, or blocked]
 FILES_CHANGED:
   - [file path] -- [what was changed]
   - [file path] -- [what was changed]
+PROOF_OF_CORRECTNESS:
+  TESTS_RUN: [command and result -- e.g., "npm test: 42 passed, 0 failed"]
+  BUILD_STATUS: [command and result -- e.g., "npm run build: success, no errors"]
+  BEHAVIOR_VERIFIED: [what was checked and how]
+  COMPARISON: [before vs. after if modifying existing behavior, or "N/A -- new code"]
+  LOGS_CHECKED: [relevant log output, or "N/A -- no runtime behavior"]
 VALIDATION: [command run and result]
 ISSUES: [any concerns or follow-up items, or "None"]
 ```
+
+Reports that say only "Implementation complete" without PROOF_OF_CORRECTNESS are insufficient. Always include evidence.
 
 Do not emit explanatory text between tool calls during implementation. Use tools, then report once at the end.
 
