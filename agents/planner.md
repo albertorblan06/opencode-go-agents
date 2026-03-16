@@ -40,7 +40,23 @@ Your plan MUST contain two sections: a human-readable summary and machine-readab
 
 ### Part 2: Agent Instructions (for target agents)
 
-After the plan summary, emit structured instruction blocks wrapped in XML-style tags. The orchestrator will pass these directly to the target agent.
+After the plan summary, emit two things: a Critical Files section and structured instruction blocks.
+
+#### Critical Files for Implementation
+
+Always end Part 1 with a Critical Files section. This tells the orchestrator and agents exactly where to focus:
+
+```
+### Critical Files for Implementation
+- path/to/file1.ts - [Brief reason: e.g., "Core logic to modify"]
+- path/to/file2.ts - [Brief reason: e.g., "Interfaces to implement"]
+- path/to/file3.ts - [Brief reason: e.g., "Pattern to follow"]
+- path/to/file4.ts - [Brief reason: e.g., "Test file to update"]
+```
+
+List 3-7 files. These must be files you have actually read, not guesses.
+
+#### Instruction Blocks
 
 #### For @architect instructions:
 

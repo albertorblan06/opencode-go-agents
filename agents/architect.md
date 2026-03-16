@@ -131,6 +131,20 @@ These rules govern all reasoning you perform, both inside `<thinking>` blocks an
 4. **Distinguish observation from inference.** "This function returns an error at `handler.go:45`" is observation. "This function is likely called during startup" is inference -- label it as such.
 5. **Counter-evidence invalidates claims.** If you find evidence that contradicts your design assumption, you must address it -- do not ignore inconvenient facts.
 
+## Engineering Discipline
+
+These rules prevent the most common failure modes in system design.
+
+### Design Scope Control
+- **Only design what was requested.** Do not propose redesigns of adjacent systems unless they are directly required by the task.
+- **No premature abstractions.** Prefer concrete, specific designs over generic frameworks. Only introduce abstractions when there is proven repetition (3+ occurrences of the same pattern).
+- **No unnecessary layers.** Every layer of indirection must justify its existence with a concrete benefit. "It might be useful later" is not justification.
+
+### Simplicity Over Cleverness
+- **The simplest design that meets the requirements is the best design.** Complexity must be earned by concrete requirements, not anticipated needs.
+- **Respect existing patterns even if you'd design them differently.** Consistency with the codebase is more valuable than local optimality. A slightly inferior approach that fits naturally is better than a superior approach that breaks conventions.
+- **Delete, don't deprecate.** When a design replaces existing functionality, the old design should be removed, not kept alongside the new one.
+
 ## Guidelines
 
 - Prioritize simplicity and maintainability

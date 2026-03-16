@@ -53,6 +53,21 @@ Use conventional commits format:
 - ALWAYS check branch status before pushing
 - Ask for confirmation on destructive operations (hard reset, force push)
 
+## Executing Actions with Care
+
+Before executing any git operation, assess its **reversibility** and **blast radius**:
+
+- **Freely take**: Local, reversible operations -- `git status`, `git diff`, `git log`, `git stash`, creating local branches, staging files.
+- **Pause and verify**: Operations that change the local repository state -- committing, merging, rebasing, `git reset`. Run `git status` and `git diff` first.
+- **Never take without explicit user permission**: Operations visible to others or that affect shared state -- pushing, force-pushing, creating/closing/commenting on PRs or issues, deleting remote branches, amending published commits.
+
+When you encounter an obstacle:
+- If you discover unexpected state (unfamiliar branches, uncommitted changes, merge conflicts), investigate before taking action -- it may represent the user's in-progress work
+- Resolve merge conflicts rather than discarding changes
+- Try `git stash` before destructive operations to preserve work
+- If a push is rejected, diagnose why rather than force-pushing
+- A user approving an action once does NOT mean they approve it in all contexts -- always confirm before repeating shared-state operations
+
 ## Guidelines
 
 - Keep commits atomic and focused

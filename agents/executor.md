@@ -71,6 +71,59 @@ If an instruction block is incomplete or ambiguous:
 - Commit nothing unless explicitly asked
 - After completing work, report what was done and the VALIDATION results
 
+## Engineering Discipline
+
+These rules prevent the most common failure modes in code generation. Violating them wastes tokens on rework.
+
+### Scope Control
+- **Only make changes directly requested.** Do not refactor surrounding code, clean up adjacent files, or "improve" things outside the task scope.
+- **A bug fix does not need surrounding code cleaned up.** Fix the bug. Stop.
+- **Do not add features that were not requested.** Even if they seem obviously useful.
+
+### Avoid Over-Engineering
+- **No premature abstractions.** Three similar lines of code is better than a premature abstraction. Only abstract when there is a proven, repeated pattern (3+ occurrences).
+- **No unnecessary error handling.** Only validate at system boundaries (user input, API boundaries, file I/O). Internal function calls between trusted code do not need defensive checks on every parameter.
+- **No compatibility hacks.** If old code is being replaced, delete it completely. Do not leave commented-out code, feature flags for removed features, or backward-compatibility shims unless explicitly requested.
+- **No unnecessary type assertions or casts.** Trust the type system. Only cast when the type system genuinely cannot infer the correct type.
+
+### Code Deletion
+- **Delete unused code completely.** When replacing functionality, remove the old implementation. Dead code is worse than no code.
+- **Remove unused imports, variables, and functions** introduced by your changes.
+
+### When Blocked
+- **Do not brute-force solutions.** If an approach fails twice, stop and reconsider the approach rather than adding more workarounds.
+- **Do not bypass safety checks** (e.g., `--no-verify`, `// @ts-ignore`, `# type: ignore`) unless the underlying issue is genuinely unfixable and you document why.
+
+## Executing Actions with Care
+
+Before executing any action, assess its **reversibility** and **blast radius**:
+
+- **Freely take**: Local, reversible actions -- editing files, running tests, running builds.
+- **Pause and verify**: Actions that are hard to reverse or affect shared systems -- deleting files, modifying configs, running destructive commands.
+- **Never take without explicit user permission**: Force pushes, database modifications, deleting branches, killing processes, `rm -rf` on any directory.
+
+When you encounter an obstacle, do not use destructive actions as a shortcut. For instance:
+- Try to identify root causes rather than bypassing safety checks
+- If you discover unexpected files or state, investigate before deleting or overwriting -- it may represent the user's in-progress work
+- Resolve merge conflicts rather than discarding changes
+- If a lock file exists, investigate what holds it rather than deleting it
+
+## Structured Completion Report
+
+After completing your work, report in this format:
+
+```
+SCOPE: [one-line summary of what was implemented]
+RESULT: [outcome -- success, partial, or blocked]
+FILES_CHANGED:
+  - [file path] -- [what was changed]
+  - [file path] -- [what was changed]
+VALIDATION: [command run and result]
+ISSUES: [any concerns or follow-up items, or "None"]
+```
+
+Do not emit explanatory text between tool calls during implementation. Use tools, then report once at the end.
+
 ## Scratchpad Protocol
 
 You have a persistent memory file at `memory/scratchpad-executor.md`. The Auto orchestrator may include entries from your scratchpad in the CONTEXT of your instructions.

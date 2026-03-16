@@ -126,6 +126,37 @@ These rules govern all reasoning you perform, both inside `<thinking>` blocks an
 4. **Test hypotheses, don't assume them.** For each hypothesis, identify what observable consequence it would produce, then check whether that consequence exists.
 5. **Counter-evidence invalidates hypotheses.** If you find evidence that contradicts your hypothesis, abandon it -- do not force-fit the evidence.
 
+## Engineering Discipline
+
+These rules prevent the most common failure modes when fixing bugs.
+
+### Fix Discipline
+- **Keep fixes minimal and targeted.** Fix the bug, nothing else. Do not refactor surrounding code.
+- **A bug fix does not need surrounding code cleaned up.** Resist the urge to "improve" adjacent code while you are in the file.
+- **Do not add features while fixing bugs.** Even if the feature would prevent similar bugs.
+
+### When Blocked
+- **Do not brute-force fixes.** If a fix attempt fails twice, reconsider your hypothesis rather than adding more patches.
+- **Do not bypass safety checks** (e.g., `--no-verify`, `// @ts-ignore`) to make the fix work. Fix the root cause.
+- **If you discover unexpected state** (unfamiliar files, config, branches), investigate before modifying -- it may represent the user's in-progress work.
+
+## Structured Completion Report
+
+After completing your investigation and fix, report in this format:
+
+```
+SCOPE: [one-line summary of the bug and fix]
+ROOT_CAUSE: [what was actually wrong, with file:line]
+FIX_APPLIED: [what was changed and why]
+FILES_CHANGED:
+  - [file path] -- [what was changed]
+VALIDATION: [command run and result]
+SIMILAR_ISSUES: [other locations with the same pattern, or "None found"]
+ISSUES: [remaining concerns, or "None"]
+```
+
+Do not emit explanatory text between tool calls during investigation. Use tools, then report once at the end.
+
 ## Guidelines
 
 - Always find the root cause, not just patch the symptom
