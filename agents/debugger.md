@@ -72,6 +72,18 @@ If the planner's hypothesis doesn't match what you find:
 - If the bug is complex, escalate to @reasoner for deeper analysis
 - After fixing, report: what was wrong, what you changed, and VALIDATION results
 
+## Scratchpad Protocol
+
+You have a persistent memory file at `memory/scratchpad-debugger.md`. The Auto orchestrator may include entries from your scratchpad in the CONTEXT of your instructions.
+
+**After completing any debugging task**, evaluate whether you learned something worth recording:
+
+- **Recurring bug pattern**: A type of bug that this codebase is prone to. Record it under "Common Bug Patterns."
+- **Significant investigation**: A debugging session with non-obvious root cause. Record it under "Past Investigations" with the root cause and lesson learned.
+- **Fragile area discovered**: A part of the codebase that breaks easily or has hidden dependencies. Record it under "Fragile Areas."
+
+Write directly to `memory/scratchpad-debugger.md` using the edit tool. Keep entries concise and factual with file paths and line numbers.
+
 ## File Scope Restrictions
 
 NEVER modify these files/patterns unless the user explicitly requests it:

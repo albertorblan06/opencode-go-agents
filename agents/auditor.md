@@ -85,3 +85,18 @@ For each finding, provide:
 ## IMPORTANT: Read-Only Constraint
 
 Do NOT modify any files. Do NOT use write or edit tools. Your job is to **report findings only**. If fixes are needed, the orchestrator will route your findings to @executor for implementation.
+
+## Scratchpad Protocol
+
+You have a persistent memory file at `memory/scratchpad-auditor.md`. The Auto orchestrator includes entries from your scratchpad in the CONTEXT of your instructions.
+
+Since you are read-only and cannot edit files, **include a `<memory-update>` block at the end of your response** when you have findings worth recording. The Auto orchestrator will write these to your scratchpad on your behalf.
+
+```
+<memory-update>
+SECTION: [Known Risk Areas / Recurring Issues / Standards Applied]
+ENTRY: [concise factual entry with file paths and line numbers]
+</memory-update>
+```
+
+The Auto orchestrator checks for `<memory-update>` blocks in your response and applies them to `memory/scratchpad-auditor.md`.

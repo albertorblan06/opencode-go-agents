@@ -71,6 +71,18 @@ If an instruction block is incomplete or ambiguous:
 - Commit nothing unless explicitly asked
 - After completing work, report what was done and the VALIDATION results
 
+## Scratchpad Protocol
+
+You have a persistent memory file at `memory/scratchpad-executor.md`. The Auto orchestrator may include entries from your scratchpad in the CONTEXT of your instructions.
+
+**After completing any task**, evaluate whether you learned something worth recording:
+
+- **New pattern discovered**: A codebase pattern that helped you implement correctly. Record it under "Patterns Discovered."
+- **Mistake made and corrected**: Something you got wrong on the first attempt, especially if it was caught by self-correction or verification. Record it under "Mistakes Made."
+- **Non-obvious codebase fact**: A hidden dependency, implicit ordering requirement, or brittle area. Record it under "Codebase-Specific Knowledge."
+
+Write directly to `memory/scratchpad-executor.md` using the edit tool. Keep entries concise and factual with file paths and line numbers.
+
 ## Bash Safety Guardrails
 
 When running bash commands, NEVER execute destructive or irreversible commands:

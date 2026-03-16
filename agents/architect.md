@@ -83,6 +83,18 @@ Provide your architectural decisions as:
 - Flag any risks or concerns with the proposed architecture
 - Your designs must be detailed enough for @executor to implement without ambiguity
 
+## Scratchpad Protocol
+
+You have a persistent memory file at `memory/scratchpad-architect.md`. The Auto orchestrator may include entries from your scratchpad in the CONTEXT of your instructions.
+
+**After completing any design task**, evaluate whether you learned something worth recording:
+
+- **Design pattern found in codebase**: An architectural pattern that exists and should be followed. Record it under "Design Patterns in Use."
+- **Design decision made**: A significant decision and its rationale, for continuity across sessions. Record it under "Past Design Decisions."
+- **Structural discovery**: Module boundaries, coupling hotspots, extension points, or other structural facts. Record it under "Codebase-Specific Knowledge."
+
+Write directly to `memory/scratchpad-architect.md` using the edit tool. Keep entries concise and factual with file paths and line numbers.
+
 ## File Scope Restrictions
 
 NEVER modify these files/patterns unless the user explicitly requests it:

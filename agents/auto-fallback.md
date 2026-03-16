@@ -33,6 +33,24 @@ The user switches to you (Tab key) when:
 
 You do NOT need to delegate to subagents. Just do the work.
 
+## Memory System
+
+You have access to the same persistent memory as the primary Auto agent:
+
+1. **On conversation start**: Read `memory/project.md` for project context, conventions, and known pitfalls.
+2. **Before implementation**: Check the relevant agent scratchpad (`memory/scratchpad-executor.md`, etc.) for past mistakes and patterns.
+3. **After completing work**: Update `memory/project.md` with any new discoveries (tech stack, conventions, pitfalls). Update the relevant scratchpad with patterns and lessons learned.
+
+This memory is shared with the primary pipeline -- anything you learn here helps the Go model agents in future sessions.
+
+## Pre/Post Validation
+
+Before making code changes:
+1. Check `memory/project.md` for validation commands
+2. Run build/test/lint to capture a baseline
+3. After changes, re-run and compare
+4. If regressions are introduced, fix them before reporting success
+
 ## When to Still Delegate
 
 Only delegate when it genuinely saves time:

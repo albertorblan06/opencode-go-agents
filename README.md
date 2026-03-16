@@ -2,7 +2,11 @@
 
 A multi-agent system for [OpenCode](https://opencode.ai) that uses OpenCode Go models ($10/month) for most work and falls back to Claude Opus 4.6 via GitHub Copilot only when needed. Designed for the best economy-to-performance ratio.
 
-Features a **Discussion Protocol** where subagents debate among themselves (advocate -> critic -> synthesizer) to find the best approach for ambiguous tasks before implementation begins.
+Features:
+- **Discussion Protocol** -- subagents debate (advocate -> critic -> synthesizer) before every implementation
+- **Persistent Memory** -- project knowledge and per-agent scratchpads that accumulate across sessions
+- **Self-Correction** -- automated retry with error context when post-validation detects regressions
+- **Pre/Post Validation Hooks** -- baseline capture before changes, regression detection after
 
 ## Architecture
 
@@ -112,6 +116,68 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
 
 **Cost:** 2 GLM-5 calls + 1 cheap Kimi call per discussion. The cost of debating is small compared to the cost of implementing the wrong approach and redoing it.
 
+### Persistent Memory System
+
+Agents accumulate knowledge across sessions via markdown files in the `memory/` directory:
+
+```
+memory/
+  project.md               -- Project-level memory (tech stack, conventions, decisions, pitfalls)
+  scratchpad-executor.md   -- Executor's patterns, past mistakes, codebase knowledge
+  scratchpad-architect.md  -- Architect's design patterns, past decisions
+  scratchpad-debugger.md   -- Debugger's bug patterns, past investigations, fragile areas
+  scratchpad-auditor.md    -- Auditor's risk areas, recurring issues, standards
+```
+
+**How it works:**
+1. Auto reads `memory/project.md` at the start of every conversation
+2. Before routing to an agent, Auto reads the agent's scratchpad and injects relevant entries into the instruction CONTEXT
+3. After task completion, agents write new discoveries to their scratchpad
+4. Over time, the system builds a knowledge base that prevents repeated mistakes and enforces learned conventions
+
+**What gets recorded:**
+- Tech stack, build/test/lint commands (auto-discovered)
+- Architectural decisions and their rationale
+- Implementation mistakes and their corrections
+- Codebase patterns, fragile areas, and coupling relationships
+- Security/quality findings from audits
+
+### Self-Correction Loop
+
+When post-implementation validation detects a regression:
+
+```
+Post-validation fails (build error, test regression, lint failure)
+    |
+    v
+Auto diagnoses the specific failure from error output
+    |
+    v
+Auto re-engineers instructions with the error context and fix strategy
+    |
+    v
+Same agent retries with targeted fix instructions
+    |
+    v
+Post-validation runs again
+    |
+    ├─ Fixed -> Report success with self-correction note
+    └─ Still failing -> Escalate to user, suggest auto-fallback
+```
+
+One retry only. If self-correction fails, the user is informed with full context.
+
+### Pre/Post Validation Hooks
+
+Before any code change, Auto captures a validation baseline (build status, test results, lint output). After the change, the same commands run again and results are diffed:
+
+- **CLEAN** -- nothing broke
+- **IMPROVED** -- previously failing tests now pass
+- **REGRESSION** -- something that worked before now fails (triggers self-correction)
+- **NEW_FAILURE** -- new failures introduced (triggers self-correction)
+
+Validation commands are auto-discovered on first use and stored in `memory/project.md` for future sessions.
+
 ### Fallback
 
 If Go model agents fail, press Tab to switch to **auto-fallback** which uses Claude Opus 4.6 via GitHub Copilot credits. Unlike Auto, the fallback handles work directly instead of delegating.
@@ -127,6 +193,7 @@ git clone https://github.com/albertorblan06/opencode-go-agents.git
 # Copy to your project or OpenCode config
 cp opencode.json /path/to/your/project/opencode.json
 cp -r agents/ /path/to/your/project/agents/
+cp -r memory/ /path/to/your/project/memory/
 ```
 
 ### Option 2: Use from `~/.config/opencode/`
@@ -134,6 +201,7 @@ cp -r agents/ /path/to/your/project/agents/
 ```bash
 git clone https://github.com/albertorblan06/opencode-go-agents.git
 cp -r opencode-go-agents/agents/ ~/.config/opencode/agents/
+cp -r opencode-go-agents/memory/ ~/.config/opencode/memory/
 ```
 
 Then update the `opencode.json` prompt paths from `{file:./agents/...}` to `{file:~/.config/opencode/agents/...}`.
