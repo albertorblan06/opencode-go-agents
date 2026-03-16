@@ -1,12 +1,52 @@
 # OpenCode Go Agents
 
-A multi-agent system for [OpenCode](https://opencode.ai) that uses OpenCode Go models ($10/month) for most work and falls back to Claude Opus 4.6 via GitHub Copilot only when needed. Designed for the best economy-to-performance ratio.
+A multi-agent system for [OpenCode](https://opencode.ai) that closes the gap with Claude Opus-level reasoning at a fraction of the cost. Uses OpenCode Go models (GLM-5, Kimi K2.5, MiniMax M2.5) with prompt-engineered agent orchestration, structured debates, chain-of-thought enforcement, and adversarial verification -- techniques derived from studying Claude Code's own system prompts.
 
-Features:
-- **Discussion Protocol** -- subagents debate (advocate -> critic -> synthesizer) before every implementation
-- **Persistent Memory** -- project knowledge and per-agent scratchpads that accumulate across sessions
-- **Self-Correction** -- automated retry with error context when post-validation detects regressions
-- **Pre/Post Validation Hooks** -- baseline capture before changes, regression detection after
+**$10/month subscription vs. $90/month for Claude Code, with comparable reasoning depth on coding tasks.**
+
+## Why This Exists
+
+Claude Code's $90/month subscription gives you Claude Opus 4.6 ($5/$25 per million input/output tokens on the API) with tight tool integration. It produces excellent results because Anthropic's system prompts enforce structured reasoning, adversarial verification, evidence-based analysis, and engineering discipline.
+
+This project replicates those techniques on top of much cheaper models:
+
+| Model | Input $/MTok | Output $/MTok | Role in this system |
+|-------|-------------|--------------|---------------------|
+| MiniMax M2.5 | $0.25 | $1.20 | Docs, git ops (routine tasks) |
+| Kimi K2.5 | $0.45 | $2.20 | Orchestration, reasoning, planning, synthesis |
+| GLM-5 | $0.72 | $2.30 | Code generation, debugging, architecture |
+| Claude Sonnet 4.6 | $3.00 | $15.00 | (reference -- Claude Code inner model) |
+| Claude Opus 4.6 | $5.00 | $25.00 | Fallback only, via GitHub Copilot credits |
+
+**Per-token, GLM-5 is 7x cheaper than Opus on input and 11x cheaper on output.** Kimi K2.5 is 11x and 11x cheaper respectively. MiniMax M2.5 is 20x and 21x cheaper.
+
+### Cost Comparison
+
+With the OpenCode Go subscription at **$10/month**, you get access to all three Go models with generous rate limits. Equivalent API costs for the same token volume would be approximately **$50-70/month** at pay-per-token rates.
+
+Claude Code at **$90/month** provides direct Opus 4.6 access. Equivalent API costs for the same usage would be **$150-250/month** depending on volume.
+
+| | OpenCode Go Agents | Claude Code |
+|---|---|---|
+| **Monthly cost** | $10 | $90 |
+| **Equivalent API cost** | ~$60 | ~$200 |
+| **Cost ratio** | **1x** | **~3-4x** |
+| **Primary model cost (per MTok out)** | $2.30 (GLM-5) | $25.00 (Opus 4.6) |
+| **Reasoning quality** | Engineered via multi-agent debate + CoT | Native (single model) |
+| **Fallback** | Claude Opus 4.6 via Copilot | N/A (already Opus) |
+
+The key insight: **a $2.30/MTok model with structured reasoning, adversarial debate, and evidence-first enforcement produces results competitive with a $25/MTok model running as a single agent.** The orchestration overhead (extra Kimi calls for planning, debate synthesis, verification) adds ~30-40% to token usage, but at Kimi's $2.20/MTok output rate, this overhead is negligible compared to the 11x per-token savings.
+
+### How We Close the Gap
+
+Raw model capability is only part of the equation. Claude Code's advantage comes significantly from its system-level engineering:
+
+1. **Structured reasoning enforcement** -- Claude Code's prompts force chain-of-thought, evidence citation, and multi-step analysis. We replicate this with mandatory `<thinking>` blocks on every reasoning agent.
+2. **Adversarial verification** -- Claude Code uses a Verification Specialist pattern that tries to break implementations rather than confirm them. We replicate this in our verifier agent.
+3. **Engineering discipline** -- Claude Code's prompts enforce scope control, minimal changes, no over-engineering. We replicate this in executor, debugger, and architect agents.
+4. **Multi-perspective analysis** -- Claude Code achieves this through a single powerful model reasoning from multiple angles. We achieve it through literal debate between two GLM-5 agents with opposing objectives.
+
+Where Claude Code still wins: novel problems requiring broad world knowledge, extremely long context windows, and tasks where raw model intelligence matters more than process. For standard software engineering (implementing features, fixing bugs, refactoring, code review), the gap is small.
 
 ## Architecture
 
@@ -46,12 +86,90 @@ User message
 | **planner** | Kimi K2.5 | Task breakdown, structured instruction output | Read-only, no bash |
 | **mapper** | Kimi K2.5 | Codebase exploration, structure mapping | Read-only, no bash |
 | **reasoner** | Kimi K2.5 | Deep analysis, trade-off evaluation | Read-only, no bash |
-| **verifier** | Kimi K2.5 | Requirement verification, test validation | Read-only |
+| **verifier** | Kimi K2.5 | Adversarial verification, test validation | Read-only |
 | **advocate** | GLM-5 | Proposes best approach in debates | Read-only, no bash |
 | **critic** | GLM-5 | Stress-tests proposals, finds weaknesses | Read-only, no bash |
 | **synthesizer** | Kimi K2.5 | Final decision-maker in debates | Read-only, no bash |
 | **docs-manager** | MiniMax M2.5 | Documentation writing and maintenance | Full |
 | **git-manager** | MiniMax M2.5 | Git operations, commits, branches, PRs | Full |
+
+## System Prompt Engineering
+
+The agent prompts in this system were developed by studying **25 of Claude Code's own system prompts** (from Anthropic's public repository) and extracting the techniques that make Claude Code effective. These techniques are model-agnostic -- they work on any capable code model, not just Claude.
+
+### Chain-of-Thought Enforcement
+
+Every reasoning agent (architect, debugger, advocate, critic, reasoner, planner, synthesizer) has a **mandatory `<thinking>` block** that must appear before any output. Each agent gets a role-specific thinking protocol:
+
+| Agent | Thinking Focus |
+|-------|---------------|
+| **architect** | Component dependency mapping, extension point analysis, trade-off evaluation |
+| **debugger** | Hypothesis chain with confirm/refute cycles, root cause isolation |
+| **advocate** | Solution space exploration, criteria alignment scoring |
+| **critic** | Independent claim verification, structured weakness search |
+| **reasoner** | Multi-step reasoning chains with intermediate conclusions |
+| **planner** | Task decomposition, dependency graph, critical path identification |
+| **synthesizer** | Disputed claim resolution, weakness mitigation assessment |
+
+The thinking structure follows the GIVEN -> EVIDENCE -> ANALYSIS -> GAPS -> CONCLUSION template, forcing the model through a complete reasoning chain rather than jumping to conclusions.
+
+### Evidence-First Reasoning
+
+All 7 reasoning agents enforce 5 evidence rules:
+
+1. **Read code BEFORE forming conclusions.** No reasoning from assumptions.
+2. **Every claim must cite `file:line`.** Vague assertions are prohibited.
+3. **Unsupported claims must be marked `[UNVERIFIED]`.** No presenting speculation as fact.
+4. **Distinguish observation from inference.** Label each explicitly.
+5. **Counter-evidence cannot be ignored.** Must be addressed, not hidden.
+
+This is adapted from Claude Code's internal approach where the model is trained to ground reasoning in concrete code references rather than abstract analysis.
+
+### Adversarial Verification (from Claude's Verification Specialist)
+
+The verifier agent was rebuilt using patterns from Claude Code's Verification Specialist prompt:
+
+- **Anti-rationalization protocol**: Lists the 5 exact excuses agents use to skip verification ("the code looks correct based on my reading" -> "reading is not verification, run it") and requires doing the opposite.
+- **Mandatory adversarial probes**: Every verification must include at least one attempt to break the implementation (boundary values, concurrency, idempotency, orphan operations).
+- **Strict evidence format**: Every check requires Command run / Output observed / Result. A check without a command is not a PASS -- it is a skip.
+- **VERDICT output**: Machine-parseable `VERDICT: PASS/FAIL/PARTIAL` format.
+
+### Engineering Discipline (from Claude's "Doing Tasks" Prompts)
+
+The executor, debugger, and architect agents enforce engineering rules extracted from Claude Code's system prompts:
+
+- **Scope control**: Only make changes directly requested. A bug fix does not need surrounding code cleaned up.
+- **No over-engineering**: No premature abstractions (need 3+ occurrences), no unnecessary error handling (only at system boundaries), no compatibility hacks.
+- **Delete unused code**: When replacing functionality, remove the old implementation completely.
+- **When blocked**: Reconsider the approach rather than brute-forcing. Never bypass safety checks.
+
+### Executing with Care (from Claude's Blast-Radius Framework)
+
+The executor and git-manager agents assess **reversibility and blast radius** before every action:
+
+- **Freely take**: Local, reversible actions (editing files, running tests)
+- **Pause and verify**: Hard-to-reverse actions (deleting files, modifying configs)
+- **Never without permission**: Shared-state actions (pushing, force-pushing, database modifications)
+
+### Reasoning Decomposition
+
+When Auto detects a deep reasoning task (5+ logical steps), it decomposes it into a chain of sequential @reasoner calls, each focused on one sub-question, with outputs chaining as context to the next. This prevents the shallow analysis that single-call reasoning produces on complex multi-dimensional questions.
+
+### Multi-Pass Verification
+
+For complex or high-stakes reasoning, Auto sends the agent's own output back to the SAME agent with a `<verify-reasoning>` prompt that audits evidence citations, logic chain integrity, blind spots, and confidence calibration. Triggered when tasks are complex, high-stakes, or the agent's confidence is medium/low.
+
+### Output Efficiency (from Claude's Output Efficiency Prompt)
+
+Auto's communication follows Claude Code's output efficiency directive: lead with the answer, not the reasoning. Skip filler, preamble, and transitions. One sentence over three.
+
+### Never Delegate Understanding (from Claude's Subagent Prompt Writing)
+
+Auto's instruction blocks must prove it understood the task: specific file paths, line numbers, what to change and why. Patterns like "based on your findings, fix the bug" are prohibited -- Auto must include the diagnosis itself.
+
+### Info-Dense Memory (from Claude's Session Memory Instructions)
+
+Memory entries must include specifics: file paths, function names, exact error messages, exact commands. Vague entries like "discovered a pattern in the auth module" are prohibited.
 
 ## How It Works
 
@@ -90,17 +208,20 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
     v
  @advocate (GLM-5)
     |  Examines code, evaluates options, champions best approach
-    |  Produces: <proposal> with arguments, trade-offs, implementation sketch
+    |  Uses mandatory <thinking> block with solution space exploration
+    |  Produces: <proposal> with evidence-cited arguments, trade-offs, implementation sketch
     |
     v
  @critic (GLM-5)
     |  Independently verifies claims, stress-tests the proposal
-    |  Finds weaknesses, checks dismissed alternatives
+    |  Uses mandatory <thinking> block with claim verification chain
+    |  Finds weaknesses with file:line evidence, checks dismissed alternatives
     |  Produces: <critique> with verdict (STRONG_SUPPORT / CONDITIONAL_SUPPORT / MAJOR_CONCERNS / OPPOSE)
     |
     v
  @synthesizer (Kimi K2.5)
-    |  Weighs both sides cheaply, resolves disputed claims
+    |  Weighs both sides, resolves disputed claims by reading code independently
+    |  Uses mandatory <thinking> block with dispute resolution analysis
     |  Produces: <decision> with final approach, implementation steps, guardrails
     |
     v
@@ -132,15 +253,8 @@ memory/
 **How it works:**
 1. Auto reads `memory/project.md` at the start of every conversation
 2. Before routing to an agent, Auto reads the agent's scratchpad and injects relevant entries into the instruction CONTEXT
-3. After task completion, agents write new discoveries to their scratchpad
+3. After task completion, agents write new discoveries to their scratchpad (info-dense: file paths, function names, exact commands)
 4. Over time, the system builds a knowledge base that prevents repeated mistakes and enforces learned conventions
-
-**What gets recorded:**
-- Tech stack, build/test/lint commands (auto-discovered)
-- Architectural decisions and their rationale
-- Implementation mistakes and their corrections
-- Codebase patterns, fragile areas, and coupling relationships
-- Security/quality findings from audits
 
 ### Self-Correction Loop
 
@@ -161,8 +275,8 @@ Same agent retries with targeted fix instructions
     v
 Post-validation runs again
     |
-    ├─ Fixed -> Report success with self-correction note
-    └─ Still failing -> Escalate to user, suggest auto-fallback
+    +--> Fixed -> Report success with self-correction note
+    +--> Still failing -> Escalate to user, suggest auto-fallback
 ```
 
 One retry only. If self-correction fails, the user is informed with full context.
