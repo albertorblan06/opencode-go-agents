@@ -2,6 +2,8 @@
 
 A multi-agent system for [OpenCode](https://opencode.ai) that uses OpenCode Go models ($10/month) for most work and falls back to Claude Opus 4.6 via GitHub Copilot only when needed. Designed for the best economy-to-performance ratio.
 
+Features a **Discussion Protocol** where subagents debate among themselves (advocate -> critic -> synthesizer) to find the best approach for ambiguous tasks before implementation begins.
+
 ## Architecture
 
 Every user message goes through the **Auto** orchestrator (Kimi K2.5), which reads relevant code, prompt-engineers structured XML instruction blocks, and routes to the best agent for the job. GLM-5 only fires when code actually needs to be written.
@@ -21,6 +23,7 @@ User message
     |-- Need validation? -----------> @verifier (Kimi K2.5, read-only)
     |-- Documentation? -------------> @docs-manager (MiniMax M2.5)
     |-- Git operations? ------------> @git-manager (MiniMax M2.5)
+    |-- Ambiguous approach? --------> DISCUSSION PROTOCOL (see below)
     |
     v
  Failed? --> Tab to switch --> Auto-Fallback (Claude Opus 4.6, handles directly)
@@ -40,6 +43,9 @@ User message
 | **mapper** | Kimi K2.5 | Codebase exploration, structure mapping | Read-only, no bash |
 | **reasoner** | Kimi K2.5 | Deep analysis, trade-off evaluation | Read-only, no bash |
 | **verifier** | Kimi K2.5 | Requirement verification, test validation | Read-only |
+| **advocate** | Kimi K2.5 | Proposes best approach in debates | Read-only, no bash |
+| **critic** | Kimi K2.5 | Stress-tests proposals, finds weaknesses | Read-only, no bash |
+| **synthesizer** | Kimi K2.5 | Final decision-maker in debates | Read-only, no bash |
 | **docs-manager** | MiniMax M2.5 | Documentation writing and maintenance | Full |
 | **git-manager** | MiniMax M2.5 | Git operations, commits, branches, PRs | Full |
 
@@ -68,6 +74,48 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
 - `<verifier-instructions>` -- validation tasks (sent to @verifier)
 - `<test-instructions>` -- test writing (sent to @executor)
 - `<needs-investigation>` -- unknown context (routed to @mapper or @reasoner, then retried)
+- `<discussion-topic>` -- ambiguous decisions (triggers Discussion Protocol debate)
+
+### Discussion Protocol (Subagent Debates)
+
+When a task has multiple viable approaches, the Auto orchestrator triggers a structured debate between three methodology agents. This ensures better decisions through adversarial reasoning.
+
+```
+ Auto identifies ambiguous decision
+    |
+    v
+ @advocate (Kimi K2.5)
+    |  Examines code, evaluates options, champions best approach
+    |  Produces: <proposal> with arguments, trade-offs, implementation sketch
+    |
+    v
+ @critic (Kimi K2.5)
+    |  Independently verifies claims, stress-tests the proposal
+    |  Finds weaknesses, checks dismissed alternatives
+    |  Produces: <critique> with verdict (STRONG_SUPPORT / CONDITIONAL_SUPPORT / MAJOR_CONCERNS / OPPOSE)
+    |
+    v
+ @synthesizer (Kimi K2.5)
+    |  Weighs both sides, resolves disputed claims
+    |  Produces: <decision> with final approach, implementation steps, guardrails
+    |
+    v
+ Auto merges <decision> into instruction blocks -> routes to @architect / @executor
+```
+
+**When it triggers:**
+- User asks "should we use X or Y?" or "what's the best approach?"
+- Multiple viable approaches exist and the best path is unclear
+- A design decision has significant long-term consequences
+- Trade-offs between competing priorities (performance vs. readability, etc.)
+
+**When it doesn't trigger:**
+- Clear single approach (just do it)
+- User already decided the approach
+- Time-sensitive bug fixes
+- Simple implementation tasks
+
+The whole debate runs on Kimi K2.5 (cheap thinking tokens), so the cost of better decisions is minimal compared to the cost of implementing the wrong approach on GLM-5.
 
 ### Fallback
 

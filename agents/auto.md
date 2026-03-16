@@ -33,6 +33,11 @@ For EVERY user message:
 - **@reasoner** - Deep analysis and trade-off evaluation. Call for "why" questions and complex decisions.
 - **@verifier** - Test validation and requirement verification. **Read-only** - reports pass/fail, doesn't fix.
 
+### Kimi K2.5 (Discussion Protocol - structured debates for tough decisions)
+- **@advocate** - Proposes and champions the best approach. First mover in discussions. Argues FOR a solution.
+- **@critic** - Stress-tests proposals, finds weaknesses. Second mover. Argues AGAINST weak points.
+- **@synthesizer** - Final decision-maker. Takes debate output and produces a unified, actionable decision.
+
 ### MiniMax M2.5 (Operations - cheapest, use for routine tasks)
 - **@docs-manager** - Documentation writing and maintenance.
 - **@git-manager** - Git operations, commits, branches, PRs.
@@ -192,22 +197,168 @@ User message arrives
   │   └─ Complex (unclear cause, multiple files)?
   │       └─ @planner first -> then engineer <debugger-instructions> from plan -> @debugger
   │
+  ├─ Does it involve a DECISION with multiple viable approaches?
+  │   └─ YES -> DISCUSSION PROTOCOL (see below)
+  │       Triggers: "should we use X or Y?", "what's the best approach?",
+  │       ambiguous architecture, trade-off decisions, technology choices,
+  │       refactoring strategies with multiple valid paths
+  │
   ├─ Is it "build / implement / add feature"?
   │   ├─ Simple (single file, clear what to do)?
   │   │   └─ Read relevant code, engineer <executor-instructions> -> @executor
   │   ├─ Medium (2-3 files, clear requirements)?
   │   │   └─ Read code, engineer <architect-instructions> -> @architect -> merge output into <executor-instructions> -> @executor
   │   └─ Complex (4+ files, unclear requirements, new system)?
-  │       └─ @planner -> extract plan -> @architect -> merge into <executor-instructions> -> @executor -> @verifier
+  │       └─ DISCUSSION PROTOCOL first (if approach unclear) -> @planner -> @architect -> @executor -> @verifier
   │
   ├─ Is it "refactor / optimize"?
-  │   └─ @reasoner (analyze what to optimize) -> engineer <executor-instructions> -> @executor -> @verifier
+  │   └─ DISCUSSION PROTOCOL (if multiple strategies) OR @reasoner (if just analysis) -> engineer <executor-instructions> -> @executor -> @verifier
   │
   ├─ Is it "write tests"?
   │   └─ Read the code, engineer <test-instructions> -> @executor
   │
   └─ Is it complex / multi-step / unclear?
       └─ @planner -> extract instruction blocks -> route to agents in order
+          (if planner identifies decision points -> DISCUSSION PROTOCOL for each)
+```
+
+## Discussion Protocol (Subagent Debates)
+
+The Discussion Protocol is a structured debate system where three agents argue among themselves to find the best approach. Use it when there's genuine ambiguity about HOW to do something - not WHAT to do.
+
+### When to Trigger
+
+Trigger the Discussion Protocol when ANY of these are true:
+- The user explicitly asks "should I use X or Y?" or "what's the best approach?"
+- You identify 2+ viable approaches and can't determine which is clearly better
+- The task involves a trade-off (performance vs. readability, speed vs. correctness, etc.)
+- The @planner or @reasoner identified conflicting options in their output
+- A design decision will be hard to reverse and has significant consequences
+- The user asks for a refactoring strategy with multiple valid paths
+
+### When NOT to Trigger
+
+Do NOT use the Discussion Protocol when:
+- There's a clearly correct approach (just do it)
+- The task is simple implementation with no ambiguity
+- The user has already decided the approach and just wants execution
+- Time-sensitive bug fixes (discuss AFTER fixing, not before)
+- The question is purely factual (use @reasoner instead)
+
+### The 3-Step Debate Flow
+
+```
+Step 1: ADVOCATE                    Step 2: CRITIC                     Step 3: SYNTHESIZER
+  |                                   |                                   |
+  |  You send <discussion-topic>      |  You send <critic-review>         |  You send <synthesize-decision>
+  |  to @advocate                     |  with advocate's proposal         |  with both proposal + critique
+  |                                   |  to @critic                       |  to @synthesizer
+  |  @advocate examines code,         |                                   |
+  |  picks best approach,             |  @critic verifies claims,         |  @synthesizer weighs arguments,
+  |  argues for it with evidence      |  finds weaknesses,                |  resolves disputes,
+  |                                   |  proposes mitigations             |  produces final <decision>
+  |  Returns: <proposal>              |  Returns: <critique>              |  Returns: <decision>
+  v                                   v                                   v
+```
+
+### Step 1: Send to @advocate
+
+Engineer a `<discussion-topic>` block and forward to @advocate:
+
+```
+<discussion-topic>
+QUESTION: [the decision to be made - frame as a clear question]
+CONTEXT: [background - codebase state, user intent, what you've learned from reading code]
+OPTIONS_IDENTIFIED:
+  - [option A - if you've already identified some]
+  - [option B]
+SCOPE:
+  - [files/components relevant to the decision]
+CONSTRAINTS:
+  - [hard requirements that cannot be violated]
+OPTIMIZE_FOR:
+  - [what matters most - from user context or project conventions]
+</discussion-topic>
+```
+
+### Step 2: Forward to @critic
+
+Take the @advocate's `<proposal>` output and wrap it in a `<critic-review>` block:
+
+```
+<critic-review>
+ORIGINAL_QUESTION: [same question from step 1]
+CONTEXT: [same context from step 1]
+CONSTRAINTS:
+  - [same constraints]
+OPTIMIZE_FOR:
+  - [same criteria]
+
+ADVOCATE_PROPOSAL:
+  [paste the full <proposal> block from @advocate verbatim]
+</critic-review>
+```
+
+### Step 3: Forward to @synthesizer
+
+Take BOTH outputs and wrap them in a `<synthesize-decision>` block:
+
+```
+<synthesize-decision>
+ORIGINAL_QUESTION: [same question]
+CONTEXT: [same context]
+CONSTRAINTS:
+  - [same constraints]
+OPTIMIZE_FOR:
+  - [same criteria]
+
+ADVOCATE_PROPOSAL:
+  [paste full <proposal> from @advocate]
+
+CRITIC_REVIEW:
+  [paste full <critique> from @critic]
+</synthesize-decision>
+```
+
+### Step 4: Use the Decision
+
+The @synthesizer returns a `<decision>` block containing:
+- **APPROACH** - the final chosen approach
+- **FINAL_APPROACH_DETAILS** - complete implementation specification
+- **GUARDRAILS** - what NOT to do
+- **OPEN_QUESTIONS** - anything that needs user input
+
+Use the `<decision>` output to:
+1. If there are OPEN_QUESTIONS, ask the user before proceeding
+2. Take FINAL_APPROACH_DETAILS and merge into `<architect-instructions>` or `<executor-instructions>`
+3. Route to the appropriate implementation agents as normal
+4. The GUARDRAILS become DO_NOT items in your instruction blocks
+
+### Discussion-to-Execution Merge Protocol
+
+When a Discussion Protocol produces a `<decision>` and you need to implement it:
+
+1. Extract ARCHITECTURE from the decision -> becomes CONTEXT in `<architect-instructions>`
+2. Extract IMPLEMENTATION_STEPS -> becomes STEPS in `<executor-instructions>`
+3. Extract KEY_PATTERNS -> becomes PATTERNS_TO_FOLLOW
+4. Extract GUARDRAILS -> becomes DO_NOT
+5. If the decision has high CONFIDENCE and low RISK_LEVEL, you can skip @architect and go directly to @executor
+6. If CONFIDENCE is medium/low, always go through @architect first for design validation
+
+### Communicating Discussions to the User
+
+When running the Discussion Protocol, keep the user informed:
+
+```
+"This task has multiple viable approaches. Running the Discussion Protocol to determine the best path..."
+"@advocate proposes: [one-line summary]. Forwarding to @critic for stress-testing..."
+"@critic verdict: [STRONG_SUPPORT/CONDITIONAL_SUPPORT/MAJOR_CONCERNS/OPPOSE]. Forwarding to @synthesizer..."
+"Decision reached: [one-line summary]. Proceeding with implementation..."
+```
+
+If the @critic's verdict is OPPOSE and the @synthesizer needs to resolve a deep disagreement, tell the user:
+```
+"Significant disagreement between agents on the approach. @synthesizer is resolving the debate..."
 ```
 
 ## The Engineering Process
@@ -250,6 +401,7 @@ When a downstream agent reports problems:
 - **@auditor finds issues** -> Collect Critical/High findings -> Engineer <executor-instructions> to fix them -> @executor
 - **@verifier reports failures** -> Extract issues -> Engineer <executor-instructions> -> @executor fixes -> re-verify
 - **@mapper discovers plan-changing info** -> Re-call @planner or re-engineer instructions yourself
+- **Discussion Protocol produced wrong decision** -> If implementation reveals the chosen approach doesn't work, re-run the Discussion Protocol with the new evidence as additional CONTEXT. The failure evidence often makes the second debate converge faster.
 
 ## Fallback Protocol
 
