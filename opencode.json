@@ -3,7 +3,7 @@
   "default_agent": "auto",
   "agent": {
     "auto": {
-      "description": "Prompt-engineering orchestrator on Kimi K2.5 - engineers every request into structured instructions and routes to specialized agents. Best economy-performance ratio.",
+      "description": "Prompt-engineering orchestrator on Kimi K2.5 - manages wide context, selects agents, and engineers structured instructions. Routing and prompt engineering, not deep logic.",
       "mode": "primary",
       "model": "opencode-go/kimi-k2.5",
       "color": "#00C896",
@@ -14,48 +14,16 @@
       }
     },
     "auto-fallback": {
-      "description": "Direct handler using Claude Opus 4.6 via GitHub Copilot - handles work directly when Kimi/GLM-5 agents fail",
+      "description": "Direct handler using Claude Opus 4.6 via GitHub Copilot - handles work directly when Go-model agents fail",
       "mode": "primary",
       "model": "github-copilot/claude-opus-4.6",
       "color": "#FF6B6B",
       "prompt": "{file:./agents/auto-fallback.md}"
     },
-    "architect": {
-      "description": "Designs system architecture, component structure, and technical decisions",
-      "mode": "subagent",
-      "model": "opencode-go/glm-5",
-      "color": "#4A90D9",
-      "prompt": "{file:./agents/architect.md}"
-    },
-    "executor": {
-      "description": "Implements code changes, writes new features, and executes build tasks",
-      "mode": "subagent",
-      "model": "opencode-go/glm-5",
-      "color": "#50C878",
-      "prompt": "{file:./agents/executor.md}"
-    },
-    "debugger": {
-      "description": "Investigates bugs, analyzes errors, and fixes issues in the codebase",
-      "mode": "subagent",
-      "model": "opencode-go/glm-5",
-      "color": "#E74C3C",
-      "prompt": "{file:./agents/debugger.md}"
-    },
-    "auditor": {
-      "description": "Reviews code quality, security, performance, and best practices",
-      "mode": "subagent",
-      "model": "opencode-go/glm-5",
-      "color": "#F39C12",
-      "prompt": "{file:./agents/auditor.md}",
-      "tools": {
-        "write": false,
-        "edit": false
-      }
-    },
     "planner": {
-      "description": "Creates implementation plans, breaks down tasks, and defines execution order. Outputs structured instruction blocks for target agents.",
+      "description": "Brain (GLM-5) - Engineers precise, structured instruction blocks that eliminate ambiguity for muscle agents",
       "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/glm-5",
       "color": "#9B59B6",
       "prompt": "{file:./agents/planner.md}",
       "tools": {
@@ -64,22 +32,10 @@
         "bash": false
       }
     },
-    "mapper": {
-      "description": "Explores and maps codebase structure, dependencies, and architecture",
-      "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
-      "color": "#1ABC9C",
-      "prompt": "{file:./agents/mapper.md}",
-      "tools": {
-        "write": false,
-        "edit": false,
-        "bash": false
-      }
-    },
     "reasoner": {
-      "description": "Performs deep analysis, logical reasoning, and complex problem solving",
+      "description": "Brain (GLM-5) - Performs deep analysis and multi-step logic for complex architectural decisions",
       "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/glm-5",
       "color": "#3498DB",
       "prompt": "{file:./agents/reasoner.md}",
       "tools": {
@@ -88,33 +44,15 @@
         "bash": false
       }
     },
-    "verifier": {
-      "description": "Verifies implementations against requirements, runs tests, and validates correctness",
+    "architect": {
+      "description": "Brain (GLM-5) - Designs robust system patterns and component interfaces",
       "mode": "subagent",
-      "model": "opencode-go/kimi-k2.5",
-      "color": "#2ECC71",
-      "prompt": "{file:./agents/verifier.md}",
-      "tools": {
-        "write": false,
-        "edit": false
-      }
-    },
-    "docs-manager": {
-      "description": "Creates and maintains documentation, READMEs, changelogs, and inline docs",
-      "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
-      "color": "#E67E22",
-      "prompt": "{file:./agents/docs-manager.md}"
-    },
-    "git-manager": {
-      "description": "Manages git operations, commits, branches, PRs, and GitHub workflows",
-      "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
-      "color": "#95A5A6",
-      "prompt": "{file:./agents/git-manager.md}"
+      "model": "opencode-go/glm-5",
+      "color": "#4A90D9",
+      "prompt": "{file:./agents/architect.md}"
     },
     "advocate": {
-      "description": "Proposes and champions the best approach in Discussion Protocol debates - argues for solutions with evidence",
+      "description": "Brain (GLM-5) - Argues for optimal solutions with evidence-based reasoning in Discussion Protocol debates",
       "mode": "subagent",
       "model": "opencode-go/glm-5",
       "color": "#27AE60",
@@ -126,7 +64,7 @@
       }
     },
     "critic": {
-      "description": "Stress-tests proposals in Discussion Protocol debates - finds weaknesses, challenges assumptions, plays devil's advocate",
+      "description": "Brain (GLM-5) - Stress-tests proposals and identifies logical weaknesses in Discussion Protocol debates",
       "mode": "subagent",
       "model": "opencode-go/glm-5",
       "color": "#C0392B",
@@ -137,10 +75,77 @@
         "bash": false
       }
     },
-    "synthesizer": {
-      "description": "Final decision-maker in Discussion Protocol debates - weighs advocate vs critic arguments and produces unified actionable decision",
+    "auditor": {
+      "description": "Brain (GLM-5) - Analyzes code for quality, security, and performance standards",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#F39C12",
+      "prompt": "{file:./agents/auditor.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "tester": {
+      "description": "Brain (GLM-5) - Designs comprehensive test strategies, edge-case coverage, and test specifications informed by industry best practices",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#16A085",
+      "prompt": "{file:./agents/tester.md}",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "executor": {
+      "description": "Muscle (Kimi K2.5) - Implements code changes based on high-quality specs provided by Brain agents",
       "mode": "subagent",
       "model": "opencode-go/kimi-k2.5",
+      "color": "#50C878",
+      "prompt": "{file:./agents/executor.md}"
+    },
+    "debugger": {
+      "description": "Muscle (Kimi K2.5) - Resolves standard bugs and syntactic issues efficiently",
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.5",
+      "color": "#E74C3C",
+      "prompt": "{file:./agents/debugger.md}"
+    },
+    "autoresearch": {
+      "description": "Muscle (Kimi K2.5) - Executes autonomous training loops and modifies ML experiment code on Apple Silicon/MPS",
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.5",
+      "color": "#FF9500",
+      "prompt": "{file:./agents/autoresearch.md}"
+    },
+    "verifier": {
+      "description": "Operations (MiniMax M2.5) - Mechanically compares actual output against expected behavior",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#2ECC71",
+      "prompt": "{file:./agents/verifier.md}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "mapper": {
+      "description": "Operations (MiniMax M2.5) - Maps project structure and reads file organization",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#1ABC9C",
+      "prompt": "{file:./agents/mapper.md}",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "synthesizer": {
+      "description": "Operations (MiniMax M2.5) - Aggregates debate context and passes it back to the orchestrator",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
       "color": "#8E44AD",
       "prompt": "{file:./agents/synthesizer.md}",
       "tools": {
@@ -149,12 +154,19 @@
         "bash": false
       }
     },
-    "autoresearch": {
-      "description": "Autonomous ML researcher for miolini/autoresearch-macos (Apple Silicon/MPS) - runs experiment loops: edits train.py, runs 5-min MPS training experiments, evaluates val_bpb, keeps improvements, discards regressions, loops indefinitely",
+    "docs-manager": {
+      "description": "Operations (MiniMax M2.5) - Routine documentation maintenance",
       "mode": "subagent",
-      "model": "opencode-go/glm-5",
-      "color": "#FF9500",
-      "prompt": "{file:./agents/autoresearch.md}"
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#E67E22",
+      "prompt": "{file:./agents/docs-manager.md}"
+    },
+    "git-manager": {
+      "description": "Operations (MiniMax M2.5) - Routine git operations and branch management",
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m2.5",
+      "color": "#95A5A6",
+      "prompt": "{file:./agents/git-manager.md}"
     }
   }
 }
