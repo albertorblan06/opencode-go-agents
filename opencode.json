@@ -148,6 +148,13 @@
         "edit": false,
         "bash": false
       }
+    },
+    "autoresearch": {
+      "description": "Autonomous ML researcher for miolini/autoresearch-macos (Apple Silicon/MPS) - runs experiment loops: edits train.py, runs 5-min MPS training experiments, evaluates val_bpb, keeps improvements, discards regressions, loops indefinitely",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#FF9500",
+      "prompt": "{file:./agents/autoresearch.md}"
     }
   }
 }

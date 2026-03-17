@@ -163,6 +163,9 @@ Steps 1-2 ensure past mistakes are not repeated. Step 5 catches hacky approaches
 - **@critic** (GLM-5) - Stress-tests proposals, finds weaknesses. Second mover. Independently verifies claims and argues AGAINST weak points.
 - **@synthesizer** (Kimi K2.5) - Final decision-maker. Weighs both sides cheaply and produces a unified, actionable decision.
 
+### GLM-5 (Autonomous Research - long-running experiment loops)
+- **@autoresearch** - Autonomous ML researcher for miolini/autoresearch-macos (macOS/Apple Silicon fork). Edits `train.py`, runs 5-minute MPS training experiments, evaluates val_bpb, keeps improvements, discards regressions, loops indefinitely. Call when the user wants to run autonomous training experiments on Mac.
+
 ### MiniMax M2.5 (Operations - cheapest, use for routine tasks)
 - **@docs-manager** - Documentation writing and maintenance.
 - **@git-manager** - Git operations, commits, branches, PRs.
@@ -291,6 +294,23 @@ DO_NOT:
 </test-instructions>
 ```
 
+### For @autoresearch:
+
+```
+<autoresearch-instructions>
+TASK: [setup / resume / run N experiments / specific experiment idea]
+CONTEXT: [project state, current best val_bpb, experiment count, prior results summary]
+REPO_PATH: [path to the autoresearch repo clone]
+CONSTRAINTS:
+  - [any user-specified constraints -- e.g. "do not change optimizer", "focus on architecture"]
+TARGET: [val_bpb target if specified, otherwise "minimize"]
+PRIOR_RESULTS:
+  - [summary of results.tsv if resuming -- best val_bpb, what worked, what failed]
+FOCUS_AREAS:
+  - [categories to prioritize -- architecture / optimization / efficiency / regularization]
+</autoresearch-instructions>
+```
+
 ## Routing Decision Tree
 
 **CRITICAL RULE: Every task that will result in code changes MUST go through the Discussion Protocol first.** The only exceptions are listed explicitly below.
@@ -308,6 +328,11 @@ User message arrives
   │
   ├─ Is it "why does X happen / compare A vs B / analyze this"? (NO code changes)
   │   └─ YES -> @reasoner (forward with context you've gathered)
+  │
+  ├─ Is it "run experiments / autoresearch / train / optimize val_bpb"? (autonomous ML research)
+  │   └─ YES -> Engineer <autoresearch-instructions> -> @autoresearch
+  │       (Setup: branch creation, baseline run. Then: autonomous experiment loop.)
+  │       (This agent runs INDEFINITELY -- do not interrupt or ask for confirmation.)
   │
   ├─ Is it "commit / push / PR / branch"? (git ops, no code changes)
   │   └─ YES -> @git-manager (forward directly)

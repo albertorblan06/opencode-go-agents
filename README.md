@@ -138,6 +138,7 @@ User message
     |-- Need validation? -----------> @verifier (Kimi K2.5, read-only)
     |-- Documentation? -------------> @docs-manager (MiniMax M2.5)
     |-- Git operations? ------------> @git-manager (MiniMax M2.5)
+    |-- ML experiments? -----------> @autoresearch (GLM-5, autonomous loop)
     |-- Ambiguous approach? --------> DISCUSSION PROTOCOL (see below)
     |
     v
@@ -163,6 +164,7 @@ User message
 | **synthesizer** | Kimi K2.5 | Final decision-maker in debates | Read-only, no bash |
 | **docs-manager** | MiniMax M2.5 | Documentation writing and maintenance | Full |
 | **git-manager** | MiniMax M2.5 | Git operations, commits, branches, PRs | Full |
+| **autoresearch** | GLM-5 | Autonomous ML experiment loops (Apple Silicon/MPS) | Full |
 
 ## System Prompt Engineering
 
@@ -268,6 +270,7 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
 - `<test-instructions>` -- test writing (sent to @executor)
 - `<needs-investigation>` -- unknown context (routed to @mapper or @reasoner, then retried)
 - `<discussion-topic>` -- ambiguous decisions (triggers Discussion Protocol debate)
+- `<autoresearch-instructions>` -- autonomous ML experiments (sent to @autoresearch)
 
 ### Discussion Protocol (Subagent Debates)
 
@@ -307,6 +310,89 @@ The planner and auto orchestrator produce XML-tagged instruction blocks:
 - Documentation (@docs-manager)
 
 **Cost:** 2 GLM-5 calls + 1 cheap Kimi call per discussion. The cost of debating is small compared to the cost of implementing the wrong approach and redoing it.
+
+### Autonomous ML Research (@autoresearch)
+
+The `@autoresearch` agent integrates [miolini/autoresearch-macos](https://github.com/miolini/autoresearch-macos) -- a macOS/Apple Silicon fork of [karpathy/autoresearch](https://github.com/karpathy/autoresearch) -- into the multi-agent system. It runs autonomous LLM training experiment loops on your Mac using MPS (Metal Performance Shaders).
+
+#### What It Does
+
+The agent edits `train.py`, runs 5-minute training experiments, evaluates `val_bpb` (validation bits-per-byte, lower is better), keeps improvements, discards regressions, and loops indefinitely until you stop it. It follows a strict scientific method: hypothesis, implement, run, evaluate, learn, repeat.
+
+#### macOS/Apple Silicon Adaptations
+
+The miolini fork makes several changes from the original CUDA-only repo that the agent is aware of:
+
+| Aspect | Original (karpathy) | macOS Fork (miolini) |
+|--------|---------------------|----------------------|
+| **Device** | NVIDIA GPU (CUDA) | Apple Silicon (MPS) |
+| **Attention** | FlashAttention-3 | PyTorch SDPA + manual sliding window |
+| **torch.compile** | Enabled | Disabled (unstable on MPS) |
+| **Autocast** | bf16 on CUDA | nullcontext on MPS |
+| **DEPTH** | 8 | 4 |
+| **DEVICE_BATCH_SIZE** | 128 | 16 |
+| **TOTAL_BATCH_SIZE** | 2^19 | 2^16 |
+| **WINDOW_PATTERN** | "SSSL" | "L" |
+| **Memory tracking** | peak_vram_mb | Reports 0.0 (no MPS equivalent) |
+
+#### How to Use It
+
+**Prerequisites:**
+
+1. Clone the autoresearch-macos repo:
+   ```bash
+   git clone https://github.com/miolini/autoresearch-macos.git
+   cd autoresearch-macos
+   ```
+
+2. Prepare the data (one-time setup):
+   ```bash
+   uv run prepare.py
+   ```
+   This downloads data shards to `~/.cache/autoresearch/`.
+
+**Running experiments:**
+
+Tell Auto (or invoke `@autoresearch` directly) to start experiments:
+
+```
+> Run autoresearch experiments on ~/autoresearch-macos
+```
+
+Or with specific constraints:
+
+```
+> Run autoresearch focusing on architecture changes, target val_bpb below 0.99
+```
+
+Auto will engineer an `<autoresearch-instructions>` block and delegate to `@autoresearch`, which will:
+
+1. Create a git branch (`autoresearch/<date-tag>`)
+2. Run a baseline experiment (unmodified `train.py`)
+3. Begin the autonomous experiment loop -- hypothesize, implement, run, evaluate, keep/discard, repeat
+4. Log every result to `results.tsv` (tab-separated: commit, val_bpb, memory_gb, status, description)
+
+**The agent runs indefinitely.** It will not pause to ask for confirmation. Interrupt manually (Ctrl+C) when you want it to stop.
+
+**Resuming:**
+
+```
+> Resume autoresearch from where we left off
+```
+
+The agent reads `results.tsv` and the git history to pick up where it stopped.
+
+#### Scope Rules
+
+- **Editable:** `train.py` only -- model architecture, optimizer, hyperparameters, training loop
+- **Read-only:** `prepare.py` -- contains the fixed evaluation harness, data loader, tokenizer
+- **No new dependencies** -- only packages already in `pyproject.toml`
+
+#### MPS-Specific Constraints
+
+- `peak_vram_mb` always reports `0.0` on MPS. The `memory_gb` column in results.tsv will always be `0.0`.
+- OOM on MPS may manifest as hangs or corrupted tensors rather than clean error messages. The agent reduces `DEVICE_BATCH_SIZE` as its first response to memory issues.
+- Architecture experiments must use SDPA-compatible attention patterns (no FlashAttention-3 operations).
 
 ### Persistent Memory System
 
