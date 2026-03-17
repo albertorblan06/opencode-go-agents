@@ -69,11 +69,24 @@ Where Claude Code still wins: novel problems requiring broad world knowledge, ex
 
 ### Visual Comparison
 
-| Claude Code (Opus 4.6) | OpenCode Go Agents |
-|:----------------------:|:------------------:|
-| ![Claude Result](benchmarks%20results/claude-result.gif) | ![Go Result](benchmarks%20results/go-result.gif) |
-| **17,562 tokens** | **31,966 tokens** |
-| ~$0.44 | ~$0.09 |
+<table align="center">
+  <tr>
+    <th align="center">Claude Code (Opus 4.6)</th>
+    <th align="center">OpenCode Go Agents</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="benchmarks%20results/claude-result.gif" width="480" height="auto" alt="Claude Result"></td>
+    <td align="center"><img src="benchmarks%20results/go-result.gif" width="480" height="auto" alt="Go Result"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>17,562 tokens</strong></td>
+    <td align="center"><strong>31,966 tokens</strong></td>
+  </tr>
+  <tr>
+    <td align="center">~$0.44</td>
+    <td align="center">~$0.09</td>
+  </tr>
+</table>
 
 ### Token Usage Breakdown
 
