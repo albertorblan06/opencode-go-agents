@@ -75,8 +75,8 @@ Where Claude Code still wins: novel problems requiring broad world knowledge, ex
     <th align="center">OpenCode Go Agents</th>
   </tr>
   <tr>
-    <td align="center"><img src="benchmarks%20results/claude-result.gif" width="480" height="auto" alt="Claude Result"></td>
-    <td align="center"><img src="benchmarks%20results/go-result.gif" width="480" height="auto" alt="Go Result"></td>
+    <td align="center"><img src="benchmarks%20results/claude-result.gif" width="350" height="auto" alt="Claude Result"></td>
+    <td align="center"><img src="benchmarks%20results/go-result.gif" width="350" height="auto" alt="Go Result"></td>
   </tr>
   <tr>
     <td align="center"><strong>17,562 tokens</strong></td>
