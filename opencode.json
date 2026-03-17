@@ -143,11 +143,23 @@
       }
     },
     "synthesizer": {
-      "description": "Brain (GLM-5) - Aggregates debate context and passes it back to the orchestrator with deeply-reasoned synthesis",
+      "description": "Operations (MiniMax M2.5) - Aggregates debate context and passes it to the debate-referee",
       "mode": "subagent",
-      "model": "opencode-go/glm-5",
+      "model": "opencode-go/minimax-m2.5",
       "color": "#8E44AD",
       "prompt": "{file:./agents/synthesizer.md}",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "debate-referee": {
+      "description": "Brain (GLM-5) - Makes the final decision from Discussion Protocol debates with deeply-reasoned judgment",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5",
+      "color": "#9B59B6",
+      "prompt": "{file:./agents/debate-referee.md}",
       "tools": {
         "write": false,
         "edit": false,
