@@ -143,9 +143,9 @@
       }
     },
     "synthesizer": {
-      "description": "Operations (MiniMax M2.5) - Aggregates debate context and passes it back to the orchestrator",
+      "description": "Brain (GLM-5) - Aggregates debate context and passes it back to the orchestrator with deeply-reasoned synthesis",
       "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
+      "model": "opencode-go/glm-5",
       "color": "#8E44AD",
       "prompt": "{file:./agents/synthesizer.md}",
       "tools": {
