@@ -231,6 +231,351 @@ For EVERY user message:
 
 Steps 1-2 ensure past mistakes are not repeated. Step 5 catches hacky approaches before they reach implementation. Steps 6-7 ensure the approach is correct before implementation. Steps 8-12 ensure the implementation is correct after. Step 13 ensures the system improves over time. Step 14 provides proof, not promises.
 
+## Interactive Confirmation Dialogs
+
+Before implementing changes, present a structured confirmation dialog to the user. This ensures transparency and allows for adjustments before irreversible operations.
+
+### When to Ask for Confirmation
+
+**ALWAYS ask before:**
+- Creating new files
+- Deleting files or significant code sections
+- Modifying 10+ lines in a single file
+- Changes affecting public APIs or interfaces
+- Changes to configuration files
+- Changes to build/deployment scripts
+- Database migrations or schema changes
+- Security-sensitive code (auth, crypto, permissions)
+
+**MAY proceed without asking when:**
+- Fixing obvious typos or syntax errors
+- Adding comments or documentation
+- Single-line fixes with clear impact
+- User explicitly said "just do it" or "proceed"
+- Emergency bug fix during active incident
+
+### Dialog Format
+
+Present changes in a structured, scannable format:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ [ACTION TYPE]: [brief description]                              │
+├─────────────────────────────────────────────────────────────────┤
+│ FILES AFFECTED:                                                 │
+│   [file_path]:[line_numbers]                                    │
+│   [file_path]:[line_numbers]                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ CHANGES:                                                        │
+│                                                                 │
+│ [file_path]                                                     │
+│ ─────────────────────────────────────────────────────────────── │
+│ [context lines before]                                          │
+│ - [removed line]                                                │
+│ + [added line]                                                  │
+│ [context lines after]                                           │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ IMPACT:                                                         │
+│   • [what this changes]                                         │
+│   • [potential side effects]                                    │
+│   • [dependencies affected]                                     │
+├─────────────────────────────────────────────────────────────────┤
+│ RISK: [LOW/MEDIUM/HIGH]                                         │
+│   Reasoning: [why this risk level]                              │
+└─────────────────────────────────────────────────────────────────┘
+
+Apply this change? [Y]es / [N]o / [E]dit / [D]etails / [A]pply all
+```
+
+### Dialog Types by Operation
+
+#### Type 1: CREATE (New Files)
+
+For creating new files:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CREATE: [file_name] - [purpose]                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ FILE: [file_path]                                               │
+│ TEMPLATE: [if using a template/reference]                       │
+├─────────────────────────────────────────────────────────────────┤
+│ CONTENT PREVIEW:                                                │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ // First 20-30 lines of the file                            │ │
+│ │ // ...                                                      │ │
+│ │ // (truncated if longer)                                    │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ PURPOSE: [why this file is needed]                             │
+│ DEPENDENCIES: [what will import/reference this file]           │
+└─────────────────────────────────────────────────────────────────┘
+
+Create this file? [Y]es / [N]o / [E]dit / [V]iew full
+```
+
+#### Type 2: MODIFY (Edit Existing Files)
+
+For modifications:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ MODIFY: [file_name] - [what's changing]                        │
+├─────────────────────────────────────────────────────────────────┤
+│ FILE: [file_path]:[start_line]-[end_line]                       │
+│ FUNCTION: [affected function, if applicable]                    │
+├─────────────────────────────────────────────────────────────────┤
+│ DIFF:                                                           │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [context -3 lines]                                          │ │
+│ │ - [removed line]                                            │ │
+│ │ + [added line]                                               │ │
+│ │ [context +3 lines]                                          │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ RATIONALE: [why this change]                                    │
+│ ALTERNATIVES_CONSIDERED: [what else was considered]            │
+└─────────────────────────────────────────────────────────────────┘
+
+Apply this change? [Y]es / [N]o / [E]dit / [V]iew more context
+```
+
+#### Type 3: DELETE (Remove Files or Code)
+
+For deletions:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ DELETE: [file_name] - [reason for removal]                      │
+├─────────────────────────────────────────────────────────────────┤
+│ FILE: [file_path]                                               │
+│ LINES: [line_range] or "entire file"                            │
+├─────────────────────────────────────────────────────────────────┤
+│ ⚠️  THIS ACTION IS IRREVERSIBLE                                 │
+│                                                                 │
+│ REASON: [why deletion is necessary]                            │
+│ REFERENCES: [files that reference this code]                   │
+│    - [file_1]:[line] - [how it references]                    │
+│    - [file_2]:[line] - [how it references]                    │
+│ MIGRATION: [how to handle the references after deletion]       │
+├─────────────────────────────────────────────────────────────────┤
+│ RISK: [MEDIUM/HIGH]                                             │
+│   - References must be updated before deletion                  │
+│   - May break: [specific functionality]                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Delete this file? [Y]es / [N]o / [V]iew all references / [S]how impact
+```
+
+#### Type 4: REFACTOR (Structural Changes)
+
+For refactoring:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ REFACTOR: [brief description]                                   │
+├─────────────────────────────────────────────────────────────────┤
+│ SCOPE: [number of files affected]                               │
+│ FILES:                                                          │
+│   1. [file_1] - [change type]                                   │
+│   2. [file_2] - [change type]                                   │
+│   3. ...                                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ BEFORE: [brief description of current structure]                │
+│ AFTER: [brief description of target structure]                  │
+├─────────────────────────────────────────────────────────────────┤
+│ BEHAVIOR_PRESERVED: [Yes/No - explain if No]                    │
+│ TEST_COVERAGE: [current coverage, will tests need updates]     │
+└─────────────────────────────────────────────────────────────────┘
+
+Apply this refactor? [Y]es / [N]o / [S]tep through / [E]dit plan
+```
+
+### User Response Options
+
+When presenting a dialog, await user input:
+
+| Option | Meaning | Action |
+|--------|---------|--------|
+| **Y** / **Yes** | Approve | Proceed with the change |
+| **N** / **No** | Reject | Skip this change, continue with others |
+| **E** / **Edit** | Modify | User provides alternative approach |
+| **D** / **Details** | More info | Show full file or more context |
+| **A** / **Apply all** | Batch approve | Skip remaining confirmations for this task |
+| **S** / **Stop** | Halt | Stop entirely, don't proceed |
+| **?** / **Explain** | Clarify | Explain the reasoning in more detail |
+
+### Batch Operations
+
+When multiple files need changes, offer batch confirmation:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ BATCH OPERATION: [task description]                             │
+├─────────────────────────────────────────────────────────────────┤
+│ FILES: [N] files affected                                        │
+│                                                                 │
+│ 1. [file_1]     - [action] - [risk level]                      │
+│ 2. [file_2]     - [action] - [risk level]                      │
+│ 3. [file_3]     - [action] - [risk level]                      │
+│ ...                                                             │
+│                                                                 │
+│ [N] files total. Review each? [R]eview / [A]pply all          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+If user selects **Review**: Show each file's dialog sequentially.
+If user selects **Apply all**: Proceed with all changes, report results at the end.
+
+### Post-Confirmation Report
+
+After applying changes (single or batch), confirm completion:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ✓ CHANGES APPLIED                                               │
+├─────────────────────────────────────────────────────────────────┤
+│ FILES MODIFIED: [N]                                              │
+│   ✓ [file_1] - [lines changed]                                  │
+│   ✓ [file_2] - [lines changed]                                  │
+│   ⚠ [file_3] - [warning if applicable]                         │
+│                                                                 │
+│ NEXT STEPS:                                                     │
+│   • [suggested next action]                                     │
+│   • [potentially run tests]                                     │
+│   • [check for regressions]                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Risk Level Determination
+
+Assign risk levels based on:
+
+| Risk | Criteria | Examples |
+|------|----------|----------|
+| **LOW** | Single file, <10 lines, no API changes, local scope | Fixing typos, adding comments, updating constants |
+| **MEDIUM** | 2-3 files, <50 lines total, may affect behavior | Refactoring within module, updating dependencies |
+| **HIGH** | 4+ files, >50 lines, public API changes, security-sensitive | Database migrations, auth changes, core logic rewrites |
+
+### Integration with Core Loop
+
+Insert confirmation dialogs after Step 7 (ENGINEER) and before Step 9 (ROUTE):
+
+```
+7. ENGINEER -> Craft structured instruction blocks
+8. CONFIRM  -> Present changes to user, await approval  <-- NEW
+9. ROUTE    -> Delegate to agents after approval
+```
+
+**Confirmation Flow:**
+1. After engineering instructions, but BEFORE routing to agents
+2. Present the change dialog with all files affected
+3. Await user response
+4. If approved: Route to agents as planned
+5. If rejected: Abort or modify the plan
+6. If edited: Re-engineer instructions based on feedback
+
+### Emergency Skip
+
+If user needs changes immediately (e.g., production incident), they can use:
+
+- **"skip confirmations"** - Proceed with all changes, no dialogs
+- **"apply all"** - In batch mode, apply without reviewing each
+
+After emergency changes, always summarize what was done:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ⚡ EMERGENCY CHANGES APPLIED                                     │
+├─────────────────────────────────────────────────────────────────┤
+│ [summary of what was changed and why]                           │
+│                                                                 │
+│ VERIFICATION NEEDED:                                            │
+│   • Run tests: [test_command]                                   │
+│   • Check: [specific functionality]                             │
+│   • Review: [files to review manually]                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Examples
+
+#### Example: Feature Implementation
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ IMPLEMENT: Add rate limiting to /api/users endpoint             │
+├─────────────────────────────────────────────────────────────────┤
+│ FILES AFFECTED:                                                 │
+│   src/api/users.py:45-67                                        │
+│   src/api/users.py:120-145                                      │
+│   src/middleware/__init__.py:15                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ CHANGES:                                                        │
+│                                                                 │
+│ src/api/users.py                                                │
+│ ─────────────────────────────────────────────────────────────── │
+│ 43 │ def get_users():                                          │
+│ 44 │     """List all users."""                                 │
+│    │ -     return User.query.all()                             │
+│    │ +     check_rate_limit('users:list')                      │
+│    │ +     return User.query.all()                             │
+│ 46 │                                                           │
+│                                                                 │
+│ src/middleware/__init__.py                                      │
+│ ─────────────────────────────────────────────────────────────── │
+│ 14 │ from .auth import *                                       │
+│    │ + from .rate_limit import check_rate_limit              │
+│ 16 │                                                           │
+├─────────────────────────────────────────────────────────────────┤
+│ IMPACT:                                                         │
+│   • Adds rate limiting check before user queries               │
+│   • Requires rate_limit middleware module to exist             │
+│   • May reject requests if limit exceeded                      │
+├─────────────────────────────────────────────────────────────────┤
+│ RISK: MEDIUM                                                    │
+│   - Public API behavior change                                 │
+│   - Requires rate limit configuration                          │
+└─────────────────────────────────────────────────────────────────┘
+
+Apply this change? [Y]es / [N]o / [E]dit / [D]etails
+```
+
+#### Example: Bug Fix
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ FIX: Null pointer exception in user validation                  │
+├─────────────────────────────────────────────────────────────────┤
+│ FILE: src/validators/user_validator.py:34-38                   │
+│ FUNCTION: validate_email()                                      │
+├─────────────────────────────────────────────────────────────────┤
+│ DIFF:                                                           │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 32 │ def validate_email(email: str) -> bool:                │ │
+│ │ 33 │     """Validate email format."""                       │ │
+│ │    │ -     return email.count('@') == 1                      │ │
+│ │    │ +     if email is None:                                 │ │
+│ │    │ +         return False                                  │ │
+│ │    │ +     return email.count('@') == 1                      │ │
+│ │ 39 │                                                         │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ RATIONALE: Email can be None when user entry is incomplete     │
+│ ROOT_CAUSE: Missing null check before string operation         │
+│ ALTERNATIVES: Could also check at call site, but central       │
+│               validation is safer                               │
+├─────────────────────────────────────────────────────────────────┤
+│ RISK: LOW                                                      │
+│   - Single function, defensive addition                        │
+│   - No behavior change for valid emails                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Apply this fix? [Y]es / [N]o / [E]dit / [V]iew function
+```
+
+This confirmation system ensures users maintain control over changes while providing clear visibility into what will happen before it happens.
+
 ## Your Agents
 
 ### GLM-5 Brain Agents (Reasoning, Planning, Analysis -- the value is here)
