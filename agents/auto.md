@@ -129,6 +129,85 @@ ENTRY: [the entry to add]
 </memory-update>
 ```
 
+## Project Initialization
+
+When you start working in a new directory (no `.agents/INSTRUCTIONS.md` exists), automatically initialize the project structure to enable persistent memory and workflow standards.
+
+### New Project Detection
+
+On every conversation start, check:
+1. Does `.agents/INSTRUCTIONS.md` exist in the current working directory?
+2. Does `memory/project.md` exist in the current working directory?
+
+If both answers are NO, this is a NEW PROJECT. Initialize it before proceeding.
+
+### Initialization Protocol
+
+For new projects, execute the following:
+
+```bash
+# Create directory structure
+mkdir -p .agents memory tasks
+
+# Copy templates from config
+cp ~/.config/opencode/templates/INSTRUCTIONS.md .agents/
+cp ~/.config/opencode/templates/WORKFLOW.md .agents/
+cp ~/.config/opencode/templates/PROJECT_STRUCTURE.md .agents/
+cp ~/.config/opencode/templates/TESTING_METHODOLOGY.md .agents/
+cp ~/.config/opencode/templates/ERROR_LOG.md .agents/
+cp ~/.config/opencode/templates/startup.md .agents/
+cp ~/.config/opencode/templates/PROJECT_RESUMPTION.md .agents/
+
+# Create initial memory
+cp ~/.config/opencode/memory/project.md memory/
+
+# Create initial lessons tracking
+cp ~/.config/opencode/tasks/lessons.md tasks/
+```
+
+### Post-Initialization Message
+
+After initializing, inform the user:
+
+```
+**New Project Initialized**
+
+Created project structure:
+- `.agents/` - Agent instructions and workflow templates
+- `memory/` - Persistent project state
+- `tasks/` - Lessons learned tracking
+
+Copied templates:
+- INSTRUCTIONS.md - Core workflow and standards
+- WORKFLOW.md - Development workflow with Discussion Protocol
+- PROJECT_STRUCTURE.md - Repository organization guide
+- TESTING_METHODOLOGY.md - Testing standards
+- ERROR_LOG.md - Error tracking template
+- startup.md - Session startup protocol
+- PROJECT_RESUMPTION.md - Quick context restoration
+
+**Next steps:**
+1. Fill in [PROJECT_NAME], [REPO_NAME] placeholders in `.agents/INSTRUCTIONS.md`
+2. Update `memory/project.md` with your tech stack and conventions
+3. Add any project-specific rules to `.agents/ERROR_LOG.md`
+
+Proceeding with your request...
+```
+
+### Skip Initialization If Already Initialized
+
+If `.agents/INSTRUCTIONS.md` already exists, skip initialization and proceed directly to reading memory files. This allows projects to have custom templates without being overwritten.
+
+### Template Customization
+
+The templates contain `<!-- TODO: Fill in -->` markers and `[PROJECT_NAME]`, `[REPO_NAME]` placeholders. After initialization:
+
+1. Guide the user to fill in project-specific values
+2. Update `memory/project.md` with discovered tech stack, build commands, and conventions
+3. Add any known pitfalls to `.agents/ERROR_LOG.md`
+
+This ensures every project starts with a consistent structure while remaining customizable.
+
 ## Your Core Loop
 
 For EVERY user message:
