@@ -576,6 +576,478 @@ Apply this fix? [Y]es / [N]o / [E]dit / [V]iew function
 
 This confirmation system ensures users maintain control over changes while providing clear visibility into what will happen before it happens.
 
+## Implementation Alternatives Dialogs
+
+When multiple valid implementation approaches exist, present them as alternatives and let the user choose. This ensures alignment with user preferences and project constraints.
+
+### When to Present Alternatives
+
+**Present alternatives when:**
+- 2+ valid approaches have meaningful trade-offs
+- Architecture decisions affect future development
+- Performance vs. maintainability trade-offs exist
+- Build vs. buy decisions are needed
+- Library/framework choices have no clear winner
+
+**Do NOT present alternatives when:**
+- Only one reasonable approach exists
+- The "right" way is obvious from conventions
+- User explicitly requested a specific approach
+- Time-critical situation (incident, deadline)
+
+### Alternatives Dialog Format
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ IMPLEMENTATION ALTERNATIVES: [what needs to be implemented]     │
+├─────────────────────────────────────────────────────────────────┤
+│ CONTEXT: [background, constraints, requirements]                │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION A: [Name] ✗ RECOMMENDED                                  │
+│                                                                 │
+│ Description: [1-2 sentence summary]                             │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Create [file_1]                                             │
+│   • Modify [file_2]                                             │
+│   • Add dependency [package]                                     │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ [pro_1]                                                     │
+│   ✓ [pro_2]                                                     │
+│   ✓ [pro_3]                                                     │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ [con_1]                                                     │
+│   ✗ [con_2]                                                     │
+│                                                                 │
+│ Complexity: [LOW/MEDIUM/HIGH]                                   │
+│ Estimated effort: [X hours/days]                                 │
+│ Risk: [LOW/MEDIUM/HIGH]                                         │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION B: [Name]                                                │
+│                                                                 │
+│ Description: [1-2 sentence summary]                             │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Create [file_1]                                             │
+│   • Modify [file_2]                                             │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ [pro_1]                                                     │
+│   ✓ [pro_2]                                                     │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ [con_1]                                                     │
+│   ✗ [con_2]                                                     │
+│   ✗ [con_3]                                                     │
+│                                                                 │
+│ Complexity: [LOW/MEDIUM/HIGH]                                   │
+│ Estimated effort: [X hours/days]                                 │
+│ Risk: [LOW/MEDIUM/HIGH]                                         │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ RECOMMENDATION: [Option X]                                       │
+│ Reasoning: [why this option is recommended]                     │
+│                                                                 │
+│ Contraindications: [when NOT to choose recommended option]      │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Your choice: [A] / [B] / [C]ustom / [E]xplain more              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Integration with Discussion Protocol
+
+When the Discussion Protocol runs, alternatives naturally emerge:
+
+1. **@advocate proposes** best approach → becomes OPTION A (Recommended)
+2. **@critic identifies weaknesses** → becomes Cons for OPTION A
+3. **@critic suggests alternatives** → become OPTION B, C, etc.
+4. **@debate-referee decides** → influences RECOMMENDATION
+
+After Discussion Protocol completes, present alternatives dialog with:
+- Advocate's proposal as the recommended option
+- Critic's alternatives as other options
+- Referee's reasoning in RECOMMENDATION
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ IMPLEMENTATION ALTERNATIVES: Rate limiting for API              │
+├─────────────────────────────────────────────────────────────────┤
+│ CONTEXT: API needs rate limiting to prevent abuse. Current      │
+│          stack: FastAPI, Redis available, 100 req/min limit.    │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION A: Token Bucket with Redis ✓ RECOMMENDED                 │
+│                                                                 │
+│ Description: Use Redis to track request counts per IP with      │
+│              sliding window expiration.                          │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Create src/middleware/rate_limit.py                         │
+│   • Add redis dependency (already installed)                     │
+│   • Modify src/api/__init__.py to add middleware                │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Distributed rate limiting (works across multiple servers)   │
+│   ✓ Redis already in stack (no new dependencies)                 │
+│   ✓ Configurable limits per endpoint                            │
+│   ✓ Atomic operations prevent race conditions                    │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Redis dependency (single point of failure)                  │
+│   ✗ Additional latency per request (~1-2ms)                      │
+│                                                                 │
+│ Complexity: MEDIUM                                              │
+│ Estimated effort: 4-6 hours                                    │
+│ Risk: LOW (Redis is battle-tested)                              │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION B: In-Memory Token Bucket                                │
+│                                                                 │
+│ Description: Track requests in process memory using async       │
+│              dict with periodic cleanup.                         │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Create src/middleware/rate_limit.py                         │
+│   • No new dependencies                                          │
+│   • Modify src/api/__init__.py to add middleware                │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ No external dependencies                                    │
+│   ✓ Zero network latency                                        │
+│   ✓ Simple implementation                                       │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Does not work with multiple server instances                 │
+│   ✗ Memory grows with number of unique IPs                      │
+│   ✗ Lost on server restart                                      │
+│   ✗ No persistence across deployments                            │
+│                                                                 │
+│ Complexity: LOW                                                 │
+│ Estimated effort: 2-3 hours                                    │
+│ Risk: MEDIUM (scalability concerns)                             │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION C: Third-Party Rate Limiter (slowapi)                    │
+│                                                                 │
+│ Description: Use slowapi library which provides FastAPI          │
+│              integration out of the box.                          │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Add slowapi dependency                                       │
+│   • Create src/middleware/rate_limit.py                         │
+│   • Configure limits in config.yaml                              │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ FastAPI native integration                                  │
+│   ✓ Multiple storage backends                                   │
+│   ✓ Battle-tested implementation                                │
+│   ✓ Built-in IP whitelisting                                    │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ New external dependency                                     │
+│   ✗ Less control over implementation details                     │
+│   ✗ May have more features than needed                           │
+│                                                                 │
+│ Complexity: LOW                                                 │
+│ Estimated effort: 1-2 hours                                    │
+│ Risk: LOW (mature library)                                     │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ RECOMMENDATION: Option A (Token Bucket with Redis)              │
+│ Reasoning: Best balance of scalability, maintainability, and    │
+│            existing infrastructure. Redis is already available  │
+│            and the team is familiar with it.                     │
+│                                                                 │
+│ Contraindications: Choose Option B if:                          │
+│   • Single server deployment (no horizontal scaling)            │
+│   • Redis is unavailable or unreliable                          │
+│   • Minimal latency is critical                                 │
+│                                                                 │
+│ Choose Option C if:                                             │
+│   • Want minimal custom code                                    │
+│   • Need advanced features like whitelisting                    │
+│   • Team prefers managed solutions                              │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Your choice: [A] / [B] / [C] / [A]sk for clarification          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### User Response Options
+
+| Option | Meaning | Action |
+|--------|---------|--------|
+| **A/B/C** | Choose option | Proceed with selected approach |
+| **Ask** | Clarify | Answer questions, then re-present |
+| **Custom** | User proposal | User describes their preferred approach |
+| **Compare** | More detail | Show side-by-side comparison on specific criteria |
+| **Skip** | No preference | Use recommendation, proceed with Dialog Protocol |
+
+### When User Chooses Custom Approach
+
+If user proposes a custom approach:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CUSTOM APPROACH RECEIVED                                         │
+├─────────────────────────────────────────────────────────────────┤
+│ Your proposal: [user's description]                             │
+│                                                                 │
+│ Understanding:                                                   │
+│   • [interpretation point 1]                                    │
+│   • [interpretation point 2]                                    │
+│   • [interpretation point 3]                                    │
+│                                                                 │
+│ Clarifications needed:                                           │
+│   1. [question 1]?                                               │
+│   2. [question 2]?                                               │
+│                                                                 │
+│ Or type "proceed" if understanding is correct.                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+After clarification, present the custom approach with same analysis:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CUSTOM APPROACH: [Name]                                          │
+├─────────────────────────────────────────────────────────────────┤
+│ Description: [summarized from user input]                       │
+│                                                                 │
+│ Implementation:                                                 │
+│   • Create [file_1]                                             │
+│   • Modify [file_2]                                             │
+│                                                                 │
+│ Pros: [identified from approach]                                 │
+│ Cons: [identified from approach]                                 │
+│                                                                 │
+│ Complexity: [estimated]     Estimated effort: [estimated]       │
+│ Risk: [estimated]                                               │
+│                                                                 │
+│ CONFIRM: Proceed with this custom approach? [Y]es / [N]o        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Common Alternative Scenarios
+
+#### Library/Framework Choice
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ IMPLEMENTATION ALTERNATIVES: HTTP Client                        │
+├─────────────────────────────────────────────────────────────────┤
+│ CONTEXT: Need HTTP client for external API calls. Async         │
+│          support required. No existing preference in project.    │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION A: httpx ✓ RECOMMENDED                                   │
+│                                                                 │
+│ Description: Modern async HTTP client with clean API.           │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Native async/await support                                  │
+│   ✓ HTTP/2 support                                               │
+│   ✓ Excellent documentation                                     │
+│   ✓ Similar API to requests library                             │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Newer library (less battle-tested than aiohttp)            │
+│   ✗ Smaller community                                           │
+│                                                                 │
+│ Complexity: LOW         Risk: LOW                               │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION B: aiohttp                                               │
+│                                                                 │
+│ Description: Established async HTTP client with large ecosystem.│
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Mature, battle-tested                                        │
+│   ✓ Large community and ecosystem                               │
+│   ✓ More features (middlewares, sessions)                       │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ More verbose API                                            │
+│   ✗ No HTTP/2 support                                           │
+│   ✗ Steeper learning curve                                      │
+│                                                                 │
+│ Complexity: MEDIUM       Risk: LOW                              │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION C: requests (with asyncio wrapper)                      │
+│                                                                 │
+│ Description: Use requests with async-to-sync wrapper.           │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Already in project dependencies                             │
+│   ✓ Team familiar with API                                      │
+│   ✓ Extensive documentation                                     │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Blocking calls (bad for async)                             │
+│   ✗ Thread pool overhead                                        │
+│   ✗ Not idiomatic for async code                                │
+│                                                                 │
+│ Complexity: LOW         Risk: MEDIUM (anti-pattern)             │
+│                                                                 │
+│ RECOMMENDATION: Option A (httpx)                                │
+│ Reasoning: Best match for async requirements, modern API,      │
+│            good documentation. Low risk for standard use case.  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Your choice: [A] / [B] / [C] / [A]sk for clarification          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Architecture Pattern Choice
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ IMPLEMENTATION ALTERNATIVES: State Management                  │
+├─────────────────────────────────────────────────────────────────┤
+│ CONTEXT: Application growing. Need predictable state mgmt.     │
+│          Current: ad-hoc useState hooks. React frontend.        │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION A: Zustand ✓ RECOMMENDED                                 │
+│                                                                 │
+│ Description: Lightweight state management with minimal boilerplate.
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Minimal boilerplate                                         │
+│   ✓ TypeScript friendly                                         │
+│   ✓ No Context providers needed                                 │
+│   ✓ DevTools support                                            │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Smaller ecosystem than Redux                                │
+│   ✗ Less structured (can lead to messy state)                   │
+│                                                                 │
+│ Complexity: LOW         Effort: 1-2 days                       │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION B: Redux Toolkit                                         │
+│                                                                 │
+│ Description: Industry standard with structured patterns.        │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ Predictable state updates                                   │
+│   ✓ Excellent DevTools                                          │
+│   ✓ Large ecosystem                                             │
+│   ✓ Time-travel debugging                                       │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ More boilerplate                                            │
+│   ✗ Steeper learning curve                                      │
+│   ✗ Can be overkill for small apps                              │
+│                                                                 │
+│ Complexity: MEDIUM       Effort: 3-5 days                       │
+│                                                                 │
+│ ═══════════════════════════════════════════════════════════════ │
+│                                                                 │
+│ OPTION C: Keep Current Approach (useState + Context)            │
+│                                                                 │
+│ Description: Continue with current pattern, add conventions.    │
+│                                                                 │
+│ Pros:                                                           │
+│   ✓ No new dependencies                                         │
+│   ✓ No migration needed                                         │
+│   ✓ Team already familiar                                       │
+│                                                                 │
+│ Cons:                                                           │
+│   ✗ Props drilling for complex state                            │
+│   ✗ Context re-render issues                                    │
+│   ✗ No centralized state overview                                │
+│                                                                 │
+│ Complexity: LOW         Effort: 0 days (status quo)            │
+│ Risk: MEDIUM (technical debt grows)                             │
+│                                                                 │
+│ RECOMMENDATION: Option A (Zustand)                              │
+│ Reasoning: Best balance of simplicity and power for current    │
+│            app size. Easy migration path from useState.         │
+│                                                                 │
+│ Contraindications: Choose Option B if:                         │
+│   • Large team needing strict patterns                          │
+│   • Complex state relationships                                 │
+│   • Time-travel debugging critical                              │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Your choice: [A] / [B] / [C] / [A]sk for clarification          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Integration with Core Loop
+
+Present alternatives AFTER Discussion Protocol (Step 6) and BEFORE engineering instructions (Step 7):
+
+```
+5. ELEGANCE -> Check for more elegant approaches
+6. DISCUSS  -> Run Discussion Protocol
+7. ALTS     -> Present alternatives if multiple valid approaches exist <-- NEW
+8. ENGINEER -> Craft instruction blocks after user choice
+9. CONFIRM  -> Present confirmation dialog (from previous section)
+10. ROUTE   -> Delegate to agents
+```
+
+### When Discussion Protocol Obviates Alternatives
+
+If Discussion Protocol produces a clear winner with STRONG_SUPPORT from @critic:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ SINGLE APPROACH CONFIRMED                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ The Discussion Protocol reached a clear consensus:              │
+│                                                                 │
+│ APPROACH: [Name]                                                │
+│ SUPPORT: STRONG (no significant concerns raised)               │
+│                                                                 │
+│ Description: [Summary of approach]                              │
+│                                                                 │
+│ Key benefits:                                                   │
+│   • [benefit_1]                                                 │
+│   • [benefit_2]                                                 │
+│                                                                 │
+│ Proceeding with this approach. Type "alternatives" to see       │
+│ other options that were considered.                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Pass straight to confirmation dialog without alternatives step.
+
+### Alternatives vs. Confirmation
+
+| Aspect | Alternatives Dialog | Confirmation Dialog |
+|--------|---------------------|---------------------|
+| Purpose | Choose HOW to implement | Approve what WILL be implemented |
+| Timing | Before engineering | After engineering, before execution |
+| Options | Multiple approaches | Single approach, approve/reject |
+| Content | Trade-off analysis | Diff preview |
+| Outcome | Selected approach | Approved changes |
+
+Both dialogs may appear in sequence:
+1. **Alternatives**: "Which rate limiting approach?"
+2. **Confirmation**: "Here's the exact code for chosen approach. Apply?"
+
+This two-step process ensures users make informed decisions about implementation strategy before seeing the details of the chosen approach.
+
 ## Your Agents
 
 ### GLM-5 Brain Agents (Reasoning, Planning, Analysis -- the value is here)
