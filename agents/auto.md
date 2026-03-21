@@ -1020,6 +1020,370 @@ Both dialogs ensure user control at different decision points.
 
 This provides transparency while avoiding unnecessary decision fatigue.
 
+## Task Breakdown & Progress Tracking
+
+Before implementing, create a visible task breakdown. Users can see exactly what will be done, track progress, and understand where effort is going.
+
+### When to Create Task Breakdown
+
+**ALWAYS create breakdown for:**
+- Tasks with 3+ implementation steps
+- Multi-file changes
+- Tasks taking >5 minutes
+- Complex features or refactors
+- Tasks with dependencies between steps
+
+**May skip breakdown for:**
+- Single-file, single-change tasks
+- Obvious one-step fixes (typo, single config change)
+- Tasks taking <2 minutes
+- User explicitly says "just do it"
+
+### Task Breakdown Format
+
+Present the breakdown after user accepts the approach (Post-Debate Dialog):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TASK BREAKDOWN: [brief task description]                         │
+├─────────────────────────────────────────────────────────────────┤
+│ Estimated steps: [N]  |  Complexity: [LOW/MEDIUM/HIGH]          │
+│ Estimated time: [X minutes/hours]                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ TODO:                                                           │
+│                                                                 │
+│ [ ] 1. [First step description]                                 │
+│        └─ Files: [file_1], [file_2]                             │
+│        └─ Action: [create/modify/delete]                       │
+│                                                                 │
+│ [ ] 2. [Second step description]                                │
+│        └─ Files: [file_3]                                       │
+│        └─ Depends on: Step 1                                    │
+│                                                                 │
+│ [ ] 3. [Third step description]                                 │
+│        └─ Files: [file_1], [file_4]                            │
+│        └─ Action: [create/modify]                               │
+│                                                                 │
+│ [ ] 4. [Fourth step description]                                │
+│        └─ Files: [file_5]                                       │
+│        └─ Depends on: Steps 2, 3                                │
+│                                                                 │
+│ [ ] 5. [Validation step]                                        │
+│        └─ Command: [test command]                               │
+│        └─ Action: Run tests to verify changes                   │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Proceed with this plan? [Y]es / [M]odify / [C]ancel             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### User Response Options
+
+| Option | Meaning | Action |
+|--------|---------|--------|
+| **Y** / Yes | Approve plan | Begin execution, show progress |
+| **M** / Modify | Edit plan | User specifies changes to steps |
+| **C** / Cancel | Abort | Stop, do not proceed |
+
+### Progress Tracking
+
+As each step is executed, update the checklist:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TASK BREAKDOWN: Implement rate limiting for API                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Progress: 3/5 steps complete | Time: 8m 23s                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ [✓] 1. Create rate limit middleware module                     │
+│       └─ Files: src/middleware/rate_limit.py                    │
+│       └─ Status: COMPLETE (2m 15s)                              │
+│                                                                 │
+│ [✓] 2. Add Redis connection for rate limit backend             │
+│       └─ Files: src/config/redis.py                            │
+│       └─ Status: COMPLETE (1m 42s)                              │
+│                                                                 │
+│ [✓] 3. Apply rate limit decorator to protected endpoints       │
+│       └─ Files: src/api/users.py, src/api/admin.py             │
+│       └─ Status: COMPLETE (2m 10s)                              │
+│                                                                 │
+│ [→] 4. Configure rate limits in config file                    │
+│       └─ Files: config/api_limits.yaml                         │
+│       └─ Status: IN PROGRESS...                                │
+│       └─ Current: Writing rate limit configuration             │
+│                                                                 │
+│ [ ] 5. Run tests and verify rate limiting works                 │
+│       └─ Command: pytest tests/test_rate_limit.py              │
+│       └─ Status: PENDING                                        │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Current: Configuring rate limits in api_limits.yaml            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Status Icons
+
+| Icon | Meaning | Description |
+|------|---------|-------------|
+| `[ ]` | PENDING | Not yet started |
+| `[→]` | IN PROGRESS | Currently executing |
+| `[✓]` | COMPLETE | Finished successfully |
+| `[✗]` | FAILED | Step failed, needs attention |
+| `[⏸]` | BLOCKED | Waiting on dependency |
+| `[⊘]` | SKIPPED | Step was not needed |
+
+### Step Categories
+
+Each step should fall into one of these categories:
+
+| Category | Example |
+|----------|---------|
+| **CREATE** | Create new file, add new function |
+| **MODIFY** | Edit existing file, update function |
+| **DELETE** | Remove file, delete code |
+| **CONFIG** | Update configuration, environment |
+| **TEST** | Write/run tests |
+| **VALIDATE** | Verify changes, check for regressions |
+| **DOC** | Update documentation |
+
+### Dependency Visualization
+
+For tasks with dependencies, show the dependency graph:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ DEPENDENCY GRAPH                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Step 1 (CREATE middleware)                                    │
+│       │                                                          │
+│       ├──── Step 2 (CREATE Redis config)                        │
+│       │         │                                                │
+│       │         └──── Step 4 (CONFIGURE limits)                 │
+│       │                                                          │
+│       └──── Step 3 (MODIFY api endpoints)                       │
+│                 │                                                │
+│                 └──── Step 5 (VALIDATE tests)                   │
+│                                │                                 │
+│                                └──── (END)                       │
+│                                                                 │
+│ Parallel steps: 1, 2 (no dependencies between them)             │
+│ Sequential steps: 2 → 4, 3 → 5                                  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Can parallelize: Steps 1, 2 | Then: 3, 4 parallel | Then: 5    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Parallel Execution
+
+When steps can run in parallel:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ PARALLEL EXECUTION                                               │
+├─────────────────────────────────────────────────────────────────┤
+│ Steps 1, 2, 3 have no dependencies - executing in parallel      │
+│                                                                 │
+│ [→] 1. Create middleware module      [Worker 1]                │
+│ [→] 2. Add Redis config             [Worker 2]                  │
+│ [→] 3. Update API endpoints         [Worker 3]                  │
+│                                                                 │
+│ Waiting for all to complete before Step 4...                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Modifying the Plan
+
+When user selects [M]odify:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ MODIFY PLAN                                                       │
+├─────────────────────────────────────────────────────────────────┤
+│ Current plan:                                                   │
+│   1. [CREATE] rate_limit.py                                     │
+│   2. [CREATE] redis_config.py                                   │
+│   3. [MODIFY] api endpoints                                     │
+│   4. [CONFIGURE] api_limits.yaml                                │
+│   5. [TEST] Run test suite                                      │
+│                                                                 │
+│ Options:                                                        │
+│   [A]dd step - Insert new step                                   │
+│   [R]emove step - Delete step                                   │
+│   [E]dit step - Modify step description                         │
+│   [S]plit step - Break into smaller steps                       │
+│   [M]erge steps - Combine consecutive steps                     │
+│   [D]one - Proceed with modified plan                            │
+│                                                                 │
+│ Your choice: _                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step Completion Messages
+
+After each step completes, show a brief status:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP COMPLETE: 3. Apply rate limit decorator to endpoints     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ Files modified:                                                 │
+│   ✓ src/api/users.py:45-67                                      │
+│   ✓ src/api/admin.py:23-41                                      │
+│                                                                 │
+│ Changes:                                                        │
+│   + Added @rate_limit decorator to get_users()                 │
+│   + Added @rate_limit decorator to get_admin_data()            │
+│   + Imported rate_limit from middleware                         │
+│                                                                 │
+│ Time: 2m 10s                                                    │
+│                                                                 │
+│ Next: Step 4 - Configure rate limits                            │
+├─────────────────────────────────────────────────────────────────┤
+│ Continue? [Y]es / [P]ause / [R]eview all changes                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Error Handling
+
+When a step fails:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP FAILED: 4. Configure rate limits                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ [✗] 4. Configure rate limits                                    │
+│       └─ Files: config/api_limits.yaml                          │
+│       └─ Status: FAILED                                         │
+│       └─ Error: File not found - config directory needs create │
+│                                                                 │
+│ Error details:                                                  │
+│   FileNotFoundError: config/api_limits.yaml                     │
+│   The config/ directory does not exist                          │
+│                                                                 │
+│ Recovery options:                                                │
+│   [A]uto-fix: Create config/ directory and retry                │
+│   [R]etry: Retry this step                                       │
+│   [S]kip: Skip this step and continue                           │
+│   [E]dit: Modify step and retry                                 │
+│   [C]ancel: Stop execution                                      │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Your choice: _                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Task Summary Report
+
+At the end of execution:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TASK COMPLETE: Implement rate limiting for API                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ SUMMARY:                                                        │
+│   ✓ Steps completed: 5/5                                       │
+│   ✓ Files modified: 4                                           │
+│   ✓ Tests passed: 12/12                                        │
+│   ✓ Total time: 15m 32s                                        │
+│                                                                 │
+│ CHANGES:                                                        │
+│   ✓ src/middleware/rate_limit.py [CREATED]                      │
+│   ✓ src/config/redis.py [MODIFIED]                              │
+│   ✓ src/api/users.py [MODIFIED]                                 │
+│   ✓ src/api/admin.py [MODIFIED]                                 │
+│   ✓ config/api_limits.yaml [CREATED]                            │
+│                                                                 │
+│ VERIFICATION:                                                    │
+│   ✓ Unit tests: 8 passed, 0 failed                              │
+│   ✓ Integration tests: 4 passed, 0 failed                       │
+│   ✓ Lint check: No errors                                       │
+│   ✓ Type check: No errors                                       │
+│                                                                 │
+│ NEXT STEPS:                                                     │
+│   • Review changes in git diff                                  │
+│   • Test manually in development environment                    │
+│   • Consider adding rate limit monitoring                        │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Ready to commit? [C]ommit / [R]eview / [A]bort                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Integration with Core Loop
+
+Updated Core Loop with task breakdown:
+
+```
+1.  LESSONS  -> Read tasks/lessons.md Active Rules
+2.  MEMORY   -> Read memory/project.md + scratchpads
+3.  ANALYZE  -> Understand user request
+4.  CONTEXT  -> Gather necessary information
+5.  ELEGANCE -> Check for more elegant approaches
+6.  DISCUSS  -> Run Discussion Protocol
+                  └─> @advocate → @critic → @debate-referee
+7.  DECIDE   -> Present Post-Debate Dialog
+                  └─> [A]ccept / [C]hoose / [R]ebate
+8.  PLAN     -> Create Task Breakdown              <-- NEW
+                  └─> Show steps, files, dependencies
+                  └─> User: [Y]es / [M]odify / [C]ancel
+9.  ENGINEER -> Craft instruction blocks for each step
+10. EXECUTE  -> Run steps with progress tracking   <-- NEW
+                  └─> Update checklist as steps complete
+                  └─> Handle failures, show recovery options
+11. VALIDATE -> Run post-implementation validation
+12. VERIFY   -> Verify correctness, senior engineer test
+13. CORRECT  -> Fix failures if needed
+14. LEARN    -> Update memory with learnings
+15. REPORT   -> Final summary with evidence
+```
+
+### Progress Updates During Execution
+
+Provide real-time updates:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ EXECUTING: Step 3 of 5                                          │
+├─────────────────────────────────────────────────────────────────┤
+│ [✓] 1. Create middleware...         DONE (2m 15s)              │
+│ [✓] 2. Add Redis config...          DONE (1m 42s)              │
+│ [→] 3. Update API endpoints...      IN PROGRESS                 │
+│        └─ Reading src/api/users.py                              │
+│        └─ Adding @rate_limit decorator                         │
+│ [ ] 4. Configure limits...          PENDING                     │
+│ [ ] 5. Run tests...                 PENDING                     │
+│                                                                 │
+│ Elapsed: 5m 20s | Remaining: ~8m (estimated)                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### When to Skip Task Breakdown
+
+For simple, obvious tasks, use simplified format:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TASK: Fix typo in README.md                                      │
+├─────────────────────────────────────────────────────────────────┤
+│ Complexity: LOW | Time: <1 minute                               │
+│                                                                 │
+│ Change:                                                         │
+│   - README.md:12                                                │
+│   - "recieve" → "receive"                                        │
+│                                                                 │
+│ Proceeding with implementation.                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+This provides transparency without overhead for trivial tasks.
+
 ## Your Agents
 
 ### GLM-5 Brain Agents (Reasoning, Planning, Analysis -- the value is here)
